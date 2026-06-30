@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Katana Barbershop | Filo y Estilo en Concordia</title>
+    <link rel="icon" href="img/katanalogo.jpg" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="container nav-container">
+        <div class="logo">
+            <img src="img/katanalogo.jpg" alt="Katana Logo">
+        </div>
+        
+        <button class="menu-toggle" id="mobile-menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <ul class="nav-links">
+            <li><a href="#inicio">Inicio</a></li>
+            <li><a href="#nosotros">Nosotros</a></li>
+            <li><a href="#galeria">Estilos</a></li>
+            <li><a href="#reserva" class="btn-nav">RESERVAR</a></li>
+        </ul>
+    </div>
+</nav>
+
+<header id="inicio" class="hero">
+    <div class="hero-overlay"></div> 
+    <div class="hero-content">
+        <div class="hero-top-badge">
+            <i class="fas fa-map-marker-alt"></i> <span>CONCORDIA, ENTRE RÍOS</span>
+        </div>
+
+        <div class="hero-logo-wrapper">
+            <img src="img/katanalogo.jpg" alt="Katana Logo Principal">
+        </div>
+        
+        <div class="hero-text-card">
+            <span class="since-tag">DESDE 2017</span>
+            <h4>ESTILO • PRECISIÓN • ACTITUD</h4>
+            <h1>EL CORTE <br><span class="text-gradient">QUE TE REPRESENTA</span></h1>
+            <p>Especialistas en fade, barba y estilo masculino en Concordia.</p>
+            
+            <div class="hero-btns">
+                <a href="#reserva" class="btn-primary">
+                    <i class="fas fa-calendar-check"></i> AGENDAR TURNO
+                </a>
+                <a href="#galeria" class="btn-outline-white">
+                    VER ESTILOS
+                </a>
+            </div>
+        </div>
+    </div>
+</header>
+
+<section id="nosotros" class="section">
+    <div class="container">
+        <div class="about-grid">
+            <div class="about-img-container">
+                <div class="img-wrapper">
+                    <img src="img/katanalogo.jpg" alt="Katana Logo" class="main-about-img">
+                    <div class="experience-tag">
+                        <span class="num">+9</span>
+                        <span class="text">AÑOS<br>DE EXPERIENCIA</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="about-text">
+                <span class="subtitle">NUESTRO ESTILO</span>
+                <h2>EL DETALLE HACE <span class="text-gradient">LA DIFERENCIA</span></h2>
+                <p>En <strong>Katana Barbershop</strong>, nos enfocamos en cada detalle. No es solo un corte, es cómo te ves y cómo te sentís. Combinamos técnica, estilo y lo que buscás vos.</p>
+                
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <i class="fab fa-instagram"></i>
+                        <div class="stat-info">
+                            <strong>+2.1k</strong>
+                            <span>Seguidores</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-certificate"></i>
+                        <div class="stat-info">
+                            <strong>Premium</strong>
+                            <span>Calidad</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="instagram-bar">
+    <a href="https://www.instagram.com/katana.barbershop/" target="_blank" class="insta-mini-card">
+        <div class="insta-circle"><i class="fab fa-instagram"></i></div>
+        <span>Luciano</span>
+    </a>
+
+    <a href="https://www.instagram.com/lw.barberia/" target="_blank" class="insta-mini-card">
+        <div class="insta-circle"><i class="fab fa-instagram"></i></div>
+        <span>Walter</span>
+    </a>
+
+    <a href="https://www.instagram.com/valen_barberx1/" target="_blank" class="insta-mini-card">
+        <div class="insta-circle"><i class="fab fa-instagram"></i></div>
+        <span>Valen</span>
+    </a>
+
+    <a href="https://www.instagram.com/streetbarber.ar/" target="_blank" class="insta-mini-card">
+        <div class="insta-circle"><i class="fab fa-instagram"></i></div>
+        <span>Nacho</span>
+    </a>
+
+    <a  href="https://www.instagram.com/scootbarberr/" target="_blank" class="insta-mini-card">
+        <div class="insta-circle"><i class="fab fa-instagram"></i></div>
+        <span>Dylan</span>
+    </a>
+</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="galeria" class="section bg-alt">
+    <div class="container">
+        <div class="text-center section-header">
+            <span class="subtitle">Portfolio</span>
+            <h2 class="text-gradient">NUESTRO TRABAJO</h2>
+            <div class="divider"></div>
+        </div>
+
+<div class="filter-buttons">
+    <button class="btn-filter active" onclick="mostrarGaleria('luciano')">Luciano</button>
+    <button class="btn-filter" onclick="mostrarGaleria('walter')">Walter</button>
+    <button class="btn-filter" onclick="mostrarGaleria('valen')">Valen</button>
+    <button class="btn-filter" onclick="mostrarGaleria('nacho')">Nacho</button>
+    <button class="btn-filter" onclick="mostrarGaleria('dylan')">Dylan</button>
+</div>
+
+<div id="galeria-luciano" class="carousel-container galeria-barbero">
+    <button class="carousel-btn prev"><i class="fas fa-chevron-left"></i></button>
+    <div class="carousel-track-container">
+        <ul class="carousel-track">
+            <li class="carousel-slide">
+                <video src="img/luciano/1.mp4" poster="img/luciano/1img.JPG" loop muted playsinline preload="none"></video>
+                <div class="play-overlay"><i class="fas fa-play"></i></div>
+            </li>
+            <li class="carousel-slide">
+                <video src="img/luciano/2.mp4" poster="img/luciano/2img.JPG" loop muted playsinline preload="none"></video>
+                <div class="play-overlay"><i class="fas fa-play"></i></div>
+            </li>
+            <li class="carousel-slide">
+                <video src="img/luciano/3.mp4" poster="img/luciano/3img.JPG" loop muted playsinline preload="none"></video>
+                <div class="play-overlay"><i class="fas fa-play"></i></div>
+            </li>
+            <li class="carousel-slide">
+                <video src="img/luciano/4.mp4" poster="img/luciano/4img.JPG" loop muted playsinline preload="none"></video>
+                <div class="play-overlay"><i class="fas fa-play"></i></div>
+            </li>
+            <li class="carousel-slide">
+                <video src="img/luciano/5.mp4" poster="img/luciano/5img.JPG" loop muted playsinline preload="none"></video>
+                <div class="play-overlay"><i class="fas fa-play"></i></div>
+            </li>
+            <li class="carousel-slide">
+                <video src="img/luciano/6.mp4" poster="img/luciano/6img.JPG" loop muted playsinline preload="none"></video>
+                <div class="play-overlay"><i class="fas fa-play"></i></div>
+            </li>
+        </ul>
+    </div>
+    <button class="carousel-btn next"><i class="fas fa-chevron-right"></i></button>
+</div>
+
+<div id="galeria-walter" class="carousel-container galeria-barbero galeria-oculta">
+    <button class="carousel-btn prev"><i class="fas fa-chevron-left"></i></button>
+    <div class="carousel-track-container">
+        <ul class="carousel-track">
+            <li class="carousel-slide"><img src="img/walter/1.jpeg" alt="Corte Walter 1"></li>
+            <li class="carousel-slide"><video src="img/walter/9.mp4" loop muted playsinline preload="none" poster="img/walter/1.jpeg"></video><div class="play-overlay"><i class="fas fa-play"></i></div></li>
+            <li class="carousel-slide"><img src="img/walter/2.jpeg" alt="Corte Walter 2"></li>
+            <li class="carousel-slide"><video src="img/walter/10.mp4" loop muted playsinline preload="none" poster="img/walter/2.jpeg"></video><div class="play-overlay"><i class="fas fa-play"></i></div></li>
+            <li class="carousel-slide"><img src="img/walter/3.jpeg" alt="Corte Walter 3"></li>
+            <li class="carousel-slide"><video src="img/walter/11.mp4" loop muted playsinline preload="none" poster="img/walter/3.jpeg"></video><div class="play-overlay"><i class="fas fa-play"></i></div></li>
+            <li class="carousel-slide"><img src="img/walter/4.jpeg" alt="Corte Walter 4"></li>
+            <li class="carousel-slide"><video src="img/walter/12.mp4" loop muted playsinline preload="none" poster="img/walter/4.jpeg"></video><div class="play-overlay"><i class="fas fa-play"></i></div></li>
+            <li class="carousel-slide"><img src="img/walter/5.jpeg" alt="Corte Walter 5"></li>
+            <li class="carousel-slide"><video src="img/walter/13.mp4" loop muted playsinline preload="none" poster="img/walter/5.jpeg"></video><div class="play-overlay"><i class="fas fa-play"></i></div></li>
+            <li class="carousel-slide"><img src="img/walter/6.jpeg" alt="Corte Walter 6"></li>
+            <li class="carousel-slide"><video src="img/walter/14.mp4" loop muted playsinline preload="none" poster="img/walter/6.jpeg"></video><div class="play-overlay"><i class="fas fa-play"></i></div></li>
+            <li class="carousel-slide"><img src="img/walter/7.jpeg" alt="Corte Walter 7"></li>
+            <li class="carousel-slide"><video src="img/walter/15.mp4" loop muted playsinline preload="none" poster="img/walter/7.jpeg"></video><div class="play-overlay"><i class="fas fa-play"></i></div></li>
+            <li class="carousel-slide"><img src="img/walter/8.jpeg" alt="Corte Walter 8"></li>
+            <li class="carousel-slide"><video src="img/walter/16.mp4" loop muted playsinline preload="none" poster="img/walter/8.jpeg"></video><div class="play-overlay"><i class="fas fa-play"></i></div></li>
+        </ul>
+    </div>
+    <button class="carousel-btn next"><i class="fas fa-chevron-right"></i></button>
+</div>
+
+<div id="galeria-nacho" class="carousel-container galeria-barbero galeria-oculta">
+    <button class="carousel-btn prev"><i class="fas fa-chevron-left"></i></button>
+    <div class="carousel-track-container">
+        <ul class="carousel-track">
+            <li class="carousel-slide">
+                <video src="img/nacho/1.mp4" poster="img/nacho/1img.JPG" loop muted playsinline preload="none"></video>
+                <div class="play-overlay"><i class="fas fa-play"></i></div>
+            </li>
+            <li class="carousel-slide">
+                <video src="img/nacho/2.mp4" poster="img/nacho/2img.JPG" loop muted playsinline preload="none"></video>
+                <div class="play-overlay"><i class="fas fa-play"></i></div>
+            </li>
+            <li class="carousel-slide">
+                <video src="img/nacho/3.mp4" poster="img/nacho/3img.JPG" loop muted playsinline preload="none"></video>
+                <div class="play-overlay"><i class="fas fa-play"></i></div>
+            </li>
+            <li class="carousel-slide">
+                <video src="img/nacho/4.mp4" poster="img/nacho/4img.JPG" loop muted playsinline preload="none"></video>
+                <div class="play-overlay"><i class="fas fa-play"></i></div>
+            </li>
+            <li class="carousel-slide">
+                <video src="img/nacho/5.mp4" poster="img/nacho/5img.JPG" loop muted playsinline preload="none"></video>
+                <div class="play-overlay"><i class="fas fa-play"></i></div>
+            </li>
+            <li class="carousel-slide">
+                <video src="img/nacho/6.mp4" poster="img/nacho/6img.JPG" loop muted playsinline preload="none"></video>
+                <div class="play-overlay"><i class="fas fa-play"></i></div>
+            </li>
+        </ul>
+    </div>
+    <button class="carousel-btn next"><i class="fas fa-chevron-right"></i></button>
+</div>
+
+<div id="galeria-valen" class="carousel-container galeria-barbero galeria-oculta">
+    <button class="carousel-btn prev"><i class="fas fa-chevron-left"></i></button>
+    <div class="carousel-track-container">
+        <ul class="carousel-track">
+            <li class="carousel-slide">
+                <video src="img/valen/1.mp4" poster="img/valen/1img.JPG" loop muted playsinline preload="none"></video>
+                <div class="play-overlay"><i class="fas fa-play"></i></div>
+            </li>
+            <li class="carousel-slide">
+                <video src="img/valen/2.mp4" poster="img/valen/2img.JPG" loop muted playsinline preload="none"></video>
+                <div class="play-overlay"><i class="fas fa-play"></i></div>
+            </li>
+            <li class="carousel-slide">
+                <video src="img/valen/3.mp4" poster="img/valen/3img.JPG" loop muted playsinline preload="none"></video>
+                <div class="play-overlay"><i class="fas fa-play"></i></div>
+            </li>
+        </ul>
+    </div>
+    <button class="carousel-btn next"><i class="fas fa-chevron-right"></i></button>
+</div>
+
+<div id="galeria-dylan" class="carousel-container galeria-barbero galeria-oculta">
+    <button class="carousel-btn prev"><i class="fas fa-chevron-left"></i></button>
+    <div class="carousel-track-container">
+        <ul class="carousel-track">
+            <li class="carousel-slide"><img src="img/dylan/1.jpg" alt="Corte Dylan 1"></li>
+            <li class="carousel-slide"><img src="img/dylan/2.jpg" alt="Corte Dylan 2"></li>
+            <li class="carousel-slide"><img src="img/dylan/3.jpg" alt="Corte Dylan 3"></li>
+            <li class="carousel-slide"><img src="img/dylan/4.jpg" alt="Corte Dylan 4"></li>
+            <li class="carousel-slide"><img src="img/dylan/5.jpg" alt="Corte Dylan 5"></li>
+            <li class="carousel-slide"><img src="img/dylan/6.jpg" alt="Corte Dylan 6"></li>
+            <li class="carousel-slide"><img src="img/dylan/7.jpg" alt="Corte Dylan 7"></li>
+            <li class="carousel-slide"><img src="img/dylan/8.jpg" alt="Corte Dylan 8"></li>
+            <li class="carousel-slide"><img src="img/dylan/9.jpg" alt="Corte Dylan 9"></li>
+        </ul>
+    </div>
+    <button class="carousel-btn next"><i class="fas fa-chevron-right"></i></button>
+</div>
+
+        </div>
+</section>
+
+    <section id="reserva" class="section">
+        <div class="container">
+            <div class="reserva-wrapper">
+                <div class="reserva-info">
+                    <span class="subtitle">Reserva Online</span>
+                    <h2>AGENDÁ TU <span class="text-gradient">TURNO</span></h2>
+                    <p>Completá los datos y dejá tu reserva cargada de forma simple. Te esperamos en la silla.</p>
+                    
+                    <div class="contact-details">
+                        <div class="info-card">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <div>
+                                <span>Ubicación</span>
+                                <p>Guarumba 908, Concordia</p>
+                            </div>
+                        </div>
+                        <div class="info-card">
+                            <i class="fas fa-clock"></i>
+                            <div>
+                                <span>Horarios</span>
+                                <p>Mar - Sab: 09:00 - 20:00 hs</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="reserva-card">
+                    <div class="reserva-header">
+                        <h3>DATOS DEL TURNO</h3>
+                    </div>
+                    <div class="form-body">
+                        <div class="input-box">
+                            <label><i class="fas fa-cut"></i> Elegí tu Barbero</label>
+                            <select id="select-barbero" class="input-select">
+                                <option value="" disabled selected>Cargando barberos...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="input-group">
+                            <div class="input-box">
+                                <label><i class="fas fa-user"></i> Nombre</label>
+                                <input type="text" id="nombre" placeholder="Tu nombre completo">
+                            </div>
+                            <div class="input-box">
+                                <label><i class="fab fa-whatsapp"></i> Teléfono</label>
+                                <input type="tel" id="telefono" placeholder="345 4xxx-xxx">
+                            </div>
+                        </div>
+
+                        <div class="input-box">
+                            <label><i class="fas fa-cut"></i> Servicio</label>
+                            <select id="select-servicio" class="input-select">
+                                <option value="" disabled selected>Cargando servicios...</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group">
+                            <div class="input-box">
+                                <label><i class="fas fa-calendar-day"></i> Fecha</label>
+                                <input type="text" id="fecha" placeholder="Seleccionar día">
+                            </div>
+                            <div class="input-box">
+                                <label><i class="fas fa-clock"></i> Horario</label>
+                                <select id="select-hora" class="input-select" disabled>
+                                    <option value="">Sin horarios disponibles</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button id="btn-confirmar" class="btn-primary btn-block">
+                            <i class="fas fa-check-circle"></i> CONFIRMAR RESERVA
+                        </button>
+                        <p class="form-note">No hay horarios disponibles para la fecha seleccionada si el selector está bloqueado.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+<footer class="main-footer">
+    <div class="container footer-content">
+        <div class="footer-logo">
+            <img src="img/katanalogo.jpg" alt="Katana Logo">
+        </div>
+        
+        <div class="footer-info">
+            <p>&copy; 2026 Katana Barbershop</p>
+            <span>Concordia, Entre Ríos</span>
+        </div>
+
+        <div class="footer-bottom">
+            <a href="login.html" class="admin-link">
+                <i class="fas fa-lock"></i> Acceso Admin
+            </a>
+        </div>
+    </div>
+</footer>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

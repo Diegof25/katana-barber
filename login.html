@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Login Admin | Katana</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body style="display: flex; align-items: center; justify-content: center; height: 100vh;">
+    <div class="reserva-card" style="width: 400px;">
+        <div class="reserva-header">
+            <h2>ACCESO <span>ADMIN</span></h2>
+        </div>
+        <div class="form-body">
+            <div class="input-box">
+                <label>Nombre de Usuario</label>
+                <input type="text" id="user" placeholder="Ej: Luciano">
+            </div>
+            <div class="input-box">
+                <label>Contraseña</label>
+                <input type="password" id="pass" placeholder="••••••••">
+            </div>
+            <button onclick="intentarLogin()" class="btn-primary btn-block">ENTRAR</button>
+            <p id="error" style="color: #ff4444; display: none; margin-top: 10px; font-size: 0.8rem; text-align: center;">
+                Usuario o clave incorrectos
+            </p>
+        </div>
+        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; text-align: center;">
+            <a href="/" style="text-decoration: none; color: #888; font-size: 0.85em; transition: 0.3s;">
+                ← Volver al inicio
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const API = 'https://turnos-backend-p9ka.onrender.com/api/katana-barbershop';
+
+        async function intentarLogin() {
+            const username = document.getElementById('user').value;
+            const password = document.getElementById('pass').value;
+            const errorMsg = document.getElementById('error');
+
+            try {
+                const res = await fetch(`${API}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password }),
+                    credentials: 'include'
+                });
+
+                if (res.ok) {
+                    setTimeout(() => {
+                        window.location.href = 'admin.html';
+                    }, 100);
+                } else {
+                    const data = await res.json();
+                    errorMsg.innerText = data.message || 'Usuario o clave incorrectos';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (err) {
+                errorMsg.innerText = 'Error de conexión con el servidor';
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        [document.getElementById('user'), document.getElementById('pass')].forEach(input => {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') intentarLogin();
+            });
+        });
+    </script>
+</body>
+</html>
