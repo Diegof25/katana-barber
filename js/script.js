@@ -200,9 +200,10 @@ document.getElementById('btn-confirmar').onclick = async () => {
             body: JSON.stringify(body)
         });
 
-        const result = await res.json();
+const result = await res.json();
+console.log('Respuesta del servidor:', result);
 
-        if (result.success) {
+if (result.success) {
             const options = { weekday: 'long', day: '2-digit', month: '2-digit' };
             const fechaLinda = new Date(fecha + 'T12:00:00').toLocaleDateString('es-AR', options);
             const diaCapitalizado = fechaLinda.charAt(0).toUpperCase() + fechaLinda.slice(1);
