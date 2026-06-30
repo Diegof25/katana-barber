@@ -184,11 +184,11 @@ document.getElementById('btn-confirmar').onclick = async () => {
     // Formato requerido por el SaaS: "YYYY-MM-DDTHH:MM:00-03:00"
     const fechaHoraSaaS = `${fecha}T${hora}:00-03:00`;
 
-    const body = {
+const body = {
         profesional_id: profesionalId,
         servicio_id:    parseInt(servicioId),
         cliente_nombre: nombre,
-        cliente_tel:    telefono.replace(/\D/g, ''), // solo números
+        cliente_tel:    telefono.replace(/\D/g, ''),
         fecha_hora:     fechaHoraSaaS,
         notas:          ''
     };
@@ -200,10 +200,11 @@ document.getElementById('btn-confirmar').onclick = async () => {
             body: JSON.stringify(body)
         });
 
-const result = await res.json();
-console.log('Respuesta del servidor:', result);
+        const okStatus = res.ok;
+        const result   = await res.json();
+        console.log('Respuesta del servidor:', result);
 
-if (result.success) {
+        if (okStatus) {
             const options = { weekday: 'long', day: '2-digit', month: '2-digit' };
             const fechaLinda = new Date(fecha + 'T12:00:00').toLocaleDateString('es-AR', options);
             const diaCapitalizado = fechaLinda.charAt(0).toUpperCase() + fechaLinda.slice(1);
