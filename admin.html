@@ -6,6 +6,7 @@
     <title>Master Panel | Katana Barbershop</title>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
     <style>
         :root {
             --accent:     #ffb400;
@@ -20,59 +21,25 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            background: var(--bg);
-            color: var(--text-main);
-            font-family: var(--font-body);
-            -webkit-font-smoothing: antialiased;
-        }
+        body { background: var(--bg); color: var(--text-main); font-family: var(--font-body); -webkit-font-smoothing: antialiased; }
 
         /* ── HEADER ── */
         .header-admin {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--card);
-            border-bottom: 1px solid var(--border);
-            padding: 15px 20px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--card); border-bottom: 1px solid var(--border);
+            padding: 15px 20px; position: sticky; top: 0; z-index: 100;
         }
         .logo-admin h1 { font-family: var(--font-heading); font-size: 1.6rem; letter-spacing: 1px; }
         .logo-admin span { color: var(--accent); }
         .logo-admin p { color: var(--text-muted); font-size: .75rem; margin-top: 2px; }
         .header-actions { display: flex; align-items: center; gap: 12px; }
-        #contador {
-            background: rgba(255,180,0,.15);
-            color: var(--accent);
-            border: 1px solid rgba(255,180,0,.3);
-            padding: 5px 14px;
-            border-radius: 4px;
-            font-size: .8rem;
-            font-weight: bold;
-        }
-        .btn-exit {
-            color: var(--text-muted); font-size: .8rem; text-decoration: none;
-            display: flex; align-items: center; gap: 5px; transition: .3s; cursor: pointer;
-            background: none; border: none; font-family: var(--font-body);
-        }
+        #contador { background: rgba(255,180,0,.15); color: var(--accent); border: 1px solid rgba(255,180,0,.3); padding: 5px 14px; border-radius: 4px; font-size: .8rem; font-weight: bold; }
+        .btn-exit { color: var(--text-muted); font-size: .8rem; text-decoration: none; display: flex; align-items: center; gap: 5px; transition: .3s; cursor: pointer; background: none; border: none; font-family: var(--font-body); }
         .btn-exit:hover { color: white; }
 
         /* ── TABS ── */
-        .tabs-bar {
-            display: flex;
-            background: var(--card);
-            border-bottom: 1px solid var(--border);
-            padding: 0 20px;
-            overflow-x: auto;
-        }
-        .tab-btn {
-            background: none; border: none; color: var(--text-muted);
-            font-family: var(--font-heading); font-size: .95rem; letter-spacing: 1px;
-            padding: 14px 20px; cursor: pointer; transition: .2s;
-            border-bottom: 2px solid transparent; white-space: nowrap;
-        }
+        .tabs-bar { display: flex; background: var(--card); border-bottom: 1px solid var(--border); padding: 0 20px; overflow-x: auto; }
+        .tab-btn { background: none; border: none; color: var(--text-muted); font-family: var(--font-heading); font-size: .95rem; letter-spacing: 1px; padding: 14px 20px; cursor: pointer; transition: .2s; border-bottom: 2px solid transparent; white-space: nowrap; }
         .tab-btn:hover { color: white; }
         .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 
@@ -82,110 +49,49 @@
         .tab-panel.active { display: block; }
 
         /* ── CARDS ── */
-        .panel-card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .panel-card h3 {
-            font-family: var(--font-heading);
-            font-size: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 18px;
-            display: flex; align-items: center; gap: 8px;
-        }
+        .panel-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .panel-card h3 { font-family: var(--font-heading); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
         .panel-card h3 i { color: var(--accent); }
 
         /* ── STATS DÍA ── */
-        .stats-dia-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-        .stat-dia-card {
-            background: #1a1a1a;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 14px;
-            text-align: center;
-        }
+        .stats-dia-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+        .stat-dia-card { background: #1a1a1a; border: 1px solid var(--border); border-radius: 6px; padding: 14px; text-align: center; }
         .stat-dia-card span { font-size: .7rem; color: var(--text-muted); display: block; margin-bottom: 6px; }
         .stat-dia-card strong { font-size: 1.3rem; display: block; }
 
         /* ── FILTRO FECHA ── */
-        .filtro-fecha-row {
-            display: flex; align-items: center; gap: 12px;
-            margin-bottom: 20px; flex-wrap: wrap;
-        }
-        .input-fecha {
-            background: #1a1a1a; border: 1px solid var(--border);
-            color: white; padding: 10px 14px; border-radius: 4px;
-            font-family: var(--font-body); font-size: .9rem;
-        }
+        .filtro-fecha-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        .input-fecha { background: #1a1a1a; border: 1px solid var(--border); color: white; padding: 10px 14px; border-radius: 4px; font-family: var(--font-body); font-size: .9rem; }
         .input-fecha:focus { border-color: var(--accent); outline: none; }
-        .btn-turno-manual {
-            background: var(--accent); color: #000; border: none;
-            padding: 10px 18px; border-radius: 4px; cursor: pointer;
-            font-family: var(--font-heading); font-size: .9rem;
-            letter-spacing: 1px; display: flex; align-items: center; gap: 6px;
-            transition: .2s;
-        }
+        .btn-turno-manual { background: var(--accent); color: #000; border: none; padding: 10px 18px; border-radius: 4px; cursor: pointer; font-family: var(--font-heading); font-size: .9rem; letter-spacing: 1px; display: flex; align-items: center; gap: 6px; transition: .2s; }
         .btn-turno-manual:hover { background: var(--accent-dark); }
 
         /* ── TABLA ── */
         .table-responsive { overflow-x: auto; }
         .admin-table { width: 100%; border-collapse: collapse; min-width: 600px; }
-        .admin-table th {
-            background: #1a1a1a; color: white; padding: 12px 15px;
-            text-align: left; text-transform: uppercase; font-size: .7rem;
-            letter-spacing: 1px; font-family: var(--font-heading);
-            border-bottom: 2px solid var(--border);
-        }
+        .admin-table th { background: #1a1a1a; color: white; padding: 12px 15px; text-align: left; text-transform: uppercase; font-size: .7rem; letter-spacing: 1px; font-family: var(--font-heading); border-bottom: 2px solid var(--border); }
         .admin-table td { padding: 14px 15px; border-bottom: 1px solid var(--border); font-size: .85rem; color: #ccc; }
         .admin-table tr:last-child td { border-bottom: none; }
         .admin-table tr:hover td { background: #181818; }
 
         /* ── BADGES ── */
-        .badge {
-            padding: 4px 10px; border-radius: 4px; font-size: .65rem;
-            font-weight: bold; text-transform: uppercase; border: 1px solid;
-            white-space: nowrap;
-        }
-        .badge-pendiente   { background: rgba(241,196,15,.1);  color: #f1c40f; border-color: rgba(241,196,15,.3); }
-        .badge-confirmado  { background: rgba(46,204,113,.15); color: #2ecc71; border-color: rgba(46,204,113,.3); }
-        .badge-cancelado   { background: rgba(255,68,68,.1);   color: #ff4444; border-color: rgba(255,68,68,.3); }
+        .badge { padding: 4px 10px; border-radius: 4px; font-size: .65rem; font-weight: bold; text-transform: uppercase; border: 1px solid; white-space: nowrap; }
+        .badge-pendiente  { background: rgba(241,196,15,.1);  color: #f1c40f; border-color: rgba(241,196,15,.3); }
+        .badge-confirmado { background: rgba(46,204,113,.15); color: #2ecc71; border-color: rgba(46,204,113,.3); }
+        .badge-cancelado  { background: rgba(255,68,68,.1);   color: #ff4444; border-color: rgba(255,68,68,.3); }
 
         /* ── BOTONES TABLA ── */
-        .btn-ws {
-            background: #25d366; color: white; padding: 6px 10px;
-            border-radius: 4px; text-decoration: none;
-            display: inline-flex; align-items: center; gap: 5px;
-            font-size: .75rem; transition: .2s;
-        }
+        .btn-ws { background: #25d366; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; font-size: .75rem; transition: .2s; }
         .btn-ws:hover { background: #1ebe5d; }
-        .btn-cobrar {
-            background: #f1c40f; color: #000; border: none;
-            padding: 7px 12px; border-radius: 4px; cursor: pointer;
-            font-weight: bold; font-size: .75rem; font-family: var(--font-body);
-            display: inline-flex; align-items: center; gap: 5px;
-        }
+        .btn-cobrar { background: #f1c40f; color: #000; border: none; padding: 7px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: .75rem; font-family: var(--font-body); display: inline-flex; align-items: center; gap: 5px; }
         .btn-cobrar:hover { background: #d4ac0d; }
         .acciones-btns { display: flex; gap: 6px; }
-        .btn-accion {
-            width: 32px; height: 32px; border-radius: 4px; border: none;
-            cursor: pointer; font-size: .85rem; display: flex;
-            align-items: center; justify-content: center; transition: .2s;
-            font-family: var(--font-body);
-        }
-        .btn-confirmar { background: rgba(46,204,113,.15);  color: #2ecc71; border: 1px solid rgba(46,204,113,.3); }
+        .btn-accion { width: 32px; height: 32px; border-radius: 4px; border: none; cursor: pointer; font-size: .85rem; display: flex; align-items: center; justify-content: center; transition: .2s; font-family: var(--font-body); }
+        .btn-confirmar { background: rgba(46,204,113,.15);  color: #2ecc71; border: 1px solid rgba(46,204,113,.3)!important; }
         .btn-confirmar:hover { background: #2ecc71; color: #000; }
-        .btn-cancelar  { background: rgba(241,196,15,.1);   color: #f1c40f; border: 1px solid rgba(241,196,15,.3); }
+        .btn-cancelar  { background: rgba(241,196,15,.1);   color: #f1c40f; border: 1px solid rgba(241,196,15,.3)!important; }
         .btn-cancelar:hover { background: #f1c40f; color: #000; }
-        .btn-eliminar  { background: rgba(255,68,68,.1);    color: #ff4444; border: 1px solid rgba(255,68,68,.3); }
+        .btn-eliminar  { background: rgba(255,68,68,.1);    color: #ff4444; border: 1px solid rgba(255,68,68,.3)!important; }
         .btn-eliminar:hover { background: #ff4444; color: white; }
 
         /* ── EMPTY ── */
@@ -195,10 +101,7 @@
 
         /* ── CARDS MOBILE ── */
         .turnos-cards-mobile { display: none; }
-        .turno-card-mobile {
-            background: #1a1a1a; border: 1px solid var(--border);
-            border-radius: 8px; padding: 15px; margin-bottom: 12px;
-        }
+        .turno-card-mobile { background: #1a1a1a; border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-bottom: 12px; }
         .turno-card-mobile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .turno-card-mobile-hora { color: var(--accent); font-weight: bold; font-size: 1.1rem; }
         .turno-card-mobile-nombre { font-size: 1rem; font-weight: bold; margin-bottom: 4px; }
@@ -207,37 +110,27 @@
         .turno-card-mobile-acciones .btn-accion { width: auto; padding: 7px 12px; font-size: .78rem; }
 
         /* ── STATS PANEL ── */
-        .stats-grid-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        .stats-mes-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-top: 16px;
-        }
-        .stat-mes-card {
-            background: #1a1a1a; border: 1px solid var(--border);
-            border-radius: 6px; padding: 16px; text-align: center;
-        }
+        .stats-grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .stats-mes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 16px; }
+        .stat-mes-card { background: #1a1a1a; border: 1px solid var(--border); border-radius: 6px; padding: 16px; text-align: center; }
         .stat-mes-card span { font-size: .7rem; color: var(--text-muted); display: block; margin-bottom: 8px; text-transform: uppercase; }
         .stat-mes-card strong { font-size: 1.5rem; display: block; }
-        .select-stats {
-            background: #1a1a1a; border: 1px solid var(--border);
-            color: white; padding: 10px 14px; border-radius: 4px;
-            font-family: var(--font-body); font-size: .85rem; width: 100%;
-            margin-bottom: 4px;
-        }
+        .select-stats { background: #1a1a1a; border: 1px solid var(--border); color: white; padding: 10px 14px; border-radius: 4px; font-family: var(--font-body); font-size: .85rem; width: 100%; margin-bottom: 4px; }
         .select-stats:focus { border-color: var(--accent); outline: none; }
-        .btn-stats {
-            width: 100%; background: var(--accent); color: #000;
-            border: none; padding: 12px; border-radius: 4px;
-            font-family: var(--font-heading); font-size: .9rem;
-            letter-spacing: 1px; cursor: pointer; margin-top: 10px; transition: .2s;
-        }
+        .btn-stats { width: 100%; background: var(--accent); color: #000; border: none; padding: 12px; border-radius: 4px; font-family: var(--font-heading); font-size: .9rem; letter-spacing: 1px; cursor: pointer; margin-top: 10px; transition: .2s; }
         .btn-stats:hover { background: var(--accent-dark); }
+
+        /* ── RANGO STATS ── */
+        .rango-grafico-card { background: #1a1a1a; border: 1px solid var(--border); border-radius: 8px; padding: 18px; margin-top: 16px; }
+        .rango-grafico-titulo { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; font-family: var(--font-heading); }
+        .rango-barras-scroll { display: flex; gap: 6px; align-items: flex-end; height: 90px; overflow-x: auto; padding-bottom: 4px; }
+        .rango-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 30px; flex-shrink: 0; }
+        .rango-bar-num { font-size: .65rem; font-weight: bold; color: var(--text-muted); min-height: 14px; }
+        .rango-bar { width: 100%; border-radius: 3px 3px 0 0; background: var(--accent); transition: height .3s; min-height: 4px; }
+        .rango-bar-label { font-size: .58rem; color: var(--text-muted); white-space: nowrap; }
+        .hidden { display: none!important; }
+        .input-rango { background: #1a1a1a; border: 1px solid var(--border); color: white; padding: 10px 14px; border-radius: 4px; font-family: var(--font-body); font-size: .85rem; }
+        .input-rango:focus { border-color: var(--accent); outline: none; }
 
         /* ── OCUPACIÓN ── */
         .ocup-card { }
@@ -252,10 +145,7 @@
         .ocup-variacion.neutral  { color: var(--text-muted); }
         .ocup-ring-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
         .ocup-ring { width: 80px; height: 80px; }
-        .ocup-ring-label {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-            font-size: .8rem; font-weight: bold;
-        }
+        .ocup-ring-label { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: .8rem; font-weight: bold; }
         .ocup-dias-titulo { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 12px; }
         .ocup-dias-barras { display: flex; gap: 8px; align-items: flex-end; height: 80px; }
         .dia-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
@@ -264,12 +154,24 @@
         .dia-bar-label { font-size: .65rem; color: var(--text-muted); }
         .ocup-mejor-dia { font-size: .8rem; color: var(--text-muted); margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
 
+        /* ── CALENDARIO FULLCALENDAR ── */
+        #calendario-admin .fc { font-family: var(--font-body); font-size: .82rem; color: var(--text-main); }
+        #calendario-admin .fc-toolbar-title { font-family: var(--font-heading); font-size: 1.1rem!important; color: white; }
+        #calendario-admin .fc-button { background: var(--accent)!important; border-color: var(--accent)!important; color: #000!important; font-size: .72rem!important; padding: 5px 10px!important; box-shadow: none!important; font-family: var(--font-heading)!important; }
+        #calendario-admin .fc-button:hover { background: var(--accent-dark)!important; border-color: var(--accent-dark)!important; }
+        #calendario-admin .fc-button-active { background: var(--accent-dark)!important; }
+        #calendario-admin .fc-daygrid-day { background: #111; border-color: var(--border)!important; }
+        #calendario-admin .fc-daygrid-day:hover { background: #1a1a1a; }
+        #calendario-admin .fc-daygrid-day-number { color: var(--text-muted); font-size: .78rem; }
+        #calendario-admin .fc-col-header-cell-cushion { color: var(--text-muted); font-size: .7rem; text-transform: uppercase; }
+        #calendario-admin .fc-event { font-size: .68rem; padding: 1px 4px; border-radius: 3px; }
+        #calendario-admin .fc-scrollgrid { border-color: var(--border)!important; }
+        #calendario-admin .fc-scrollgrid-section > td { border-color: var(--border)!important; }
+        #calendario-admin .fc-theme-standard td, #calendario-admin .fc-theme-standard th { border-color: var(--border)!important; }
+
         /* ── HORARIOS ── */
         .horarios-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-bottom: 20px; }
-        .dia-horario-card {
-            background: #1a1a1a; border: 1px solid var(--border);
-            border-radius: 8px; padding: 16px; opacity: .6; transition: .2s;
-        }
+        .dia-horario-card { background: #1a1a1a; border: 1px solid var(--border); border-radius: 8px; padding: 16px; opacity: .6; transition: .2s; }
         .dia-horario-card.activo { opacity: 1; border-color: #333; }
         .dia-horario-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
         .dia-horario-nombre { font-family: var(--font-heading); font-size: 1rem; color: white; }
@@ -282,116 +184,51 @@
         .turno-bloque-titulo { font-size: .75rem; color: var(--text-muted); margin-bottom: 10px; }
         .turno-times { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .label-horario { display: block; font-size: .65rem; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; }
-        .input-horario {
-            width: 100%; background: #1a1a1a; border: 1px solid var(--border);
-            color: white; padding: 8px 10px; border-radius: 4px;
-            font-family: var(--font-body); font-size: .85rem;
-        }
+        .input-horario { width: 100%; background: #1a1a1a; border: 1px solid var(--border); color: white; padding: 8px 10px; border-radius: 4px; font-family: var(--font-body); font-size: .85rem; }
         .input-horario:focus { border-color: var(--accent); outline: none; }
         .dia-intervalo { margin-top: 10px; }
-        .btn-guardar-horarios {
-            background: var(--accent); color: #000; border: none;
-            padding: 14px; border-radius: 4px; cursor: pointer;
-            font-family: var(--font-heading); font-size: .95rem;
-            letter-spacing: 1px; width: 100%; transition: .2s;
-        }
+        .btn-guardar-horarios { background: var(--accent); color: #000; border: none; padding: 14px; border-radius: 4px; cursor: pointer; font-family: var(--font-heading); font-size: .95rem; letter-spacing: 1px; width: 100%; transition: .2s; }
         .btn-guardar-horarios:hover { background: var(--accent-dark); }
 
         /* ── BLOQUEOS ── */
         .bloqueos-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .input-bloqueo {
-            width: 100%; background: #1a1a1a; border: 1px solid var(--border);
-            color: white; padding: 10px 14px; border-radius: 4px;
-            font-family: var(--font-body); font-size: .85rem; margin-bottom: 12px;
-        }
+        .input-bloqueo { width: 100%; background: #1a1a1a; border: 1px solid var(--border); color: white; padding: 10px 14px; border-radius: 4px; font-family: var(--font-body); font-size: .85rem; margin-bottom: 12px; }
         .input-bloqueo:focus { border-color: var(--accent); outline: none; }
         .bloqueos-btns { display: flex; gap: 10px; margin-top: 4px; }
-        .btn-bloquear {
-            flex: 1; padding: 12px; border: none; border-radius: 4px;
-            cursor: pointer; font-family: var(--font-heading); font-size: .85rem;
-            letter-spacing: 1px; transition: .2s;
-        }
+        .btn-bloquear { flex: 1; padding: 12px; border: none; border-radius: 4px; cursor: pointer; font-family: var(--font-heading); font-size: .85rem; letter-spacing: 1px; transition: .2s; }
         .btn-bloquear-rango { background: #333; color: white; }
         .btn-bloquear-rango:hover { background: #444; }
         .btn-bloquear-dia   { background: #ff4444; color: white; }
         .btn-bloquear-dia:hover { background: #cc3333; }
         .label-bloqueo { display: block; font-size: .7rem; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; }
-        .bloqueo-item {
-            display: flex; justify-content: space-between; align-items: center;
-            background: #0a0a0a; border: 1px solid var(--border);
-            border-left: 3px solid var(--accent);
-            padding: 10px 12px; border-radius: 4px; margin-bottom: 8px;
-        }
+        .bloqueo-item { display: flex; justify-content: space-between; align-items: center; background: #0a0a0a; border: 1px solid var(--border); border-left: 3px solid var(--accent); padding: 10px 12px; border-radius: 4px; margin-bottom: 8px; }
         .bloqueo-info { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: .8rem; }
-        .bloqueo-tipo {
-            background: rgba(255,180,0,.15); color: var(--accent);
-            border: 1px solid rgba(255,180,0,.3); padding: 2px 8px;
-            border-radius: 3px; font-size: .65rem; text-transform: uppercase;
-        }
+        .bloqueo-tipo { background: rgba(255,180,0,.15); color: var(--accent); border: 1px solid rgba(255,180,0,.3); padding: 2px 8px; border-radius: 3px; font-size: .65rem; text-transform: uppercase; }
         .bloqueo-tipo.parcial { background: rgba(241,196,15,.1); color: #f1c40f; border-color: rgba(241,196,15,.3); }
-        .btn-mini-delete {
-            background: none; border: none; color: var(--text-muted);
-            cursor: pointer; font-size: 1.1rem; padding: 0 5px; transition: .2s;
-        }
+        .btn-mini-delete { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; padding: 0 5px; transition: .2s; }
         .btn-mini-delete:hover { color: #ff4444; }
 
         /* ── MODAL ── */
-        .modal-overlay {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,.75); z-index: 9999;
-            align-items: center; justify-content: center;
-            padding: 16px; backdrop-filter: blur(4px);
-        }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 9999; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(4px); }
         .modal-overlay.visible { display: flex; }
-        .modal-card {
-            background: #111; border: 1px solid var(--border);
-            border-radius: 10px; padding: 24px;
-            width: 100%; max-width: 420px;
-            max-height: 90vh; overflow-y: auto;
-        }
-        .modal-header {
-            display: flex; justify-content: space-between;
-            align-items: center; margin-bottom: 16px;
-        }
+        .modal-card { background: #111; border: 1px solid var(--border); border-radius: 10px; padding: 24px; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
         .modal-header h3 { font-family: var(--font-heading); font-size: 1.1rem; }
-        .modal-close {
-            background: none; border: none; color: var(--text-muted);
-            font-size: 1.1rem; cursor: pointer; padding: 4px 8px;
-        }
+        .modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; padding: 4px 8px; }
         .modal-servicio-nombre { font-size: .85rem; color: var(--accent); margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
         .modal-row { margin-bottom: 16px; }
         .modal-label { display: block; font-size: .7rem; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; }
         .modal-precio-base { font-size: 1.5rem; font-weight: bold; color: white; }
         .modal-metodos { display: flex; gap: 8px; flex-wrap: wrap; }
-        .metodo-btn {
-            flex: 1; min-width: 100px; padding: 10px 12px;
-            border: 1px solid var(--border); border-radius: 6px;
-            background: #1a1a1a; font-size: .8rem; font-family: var(--font-body);
-            cursor: pointer; color: var(--text-muted); transition: .2s;
-        }
+        .metodo-btn { flex: 1; min-width: 100px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: #1a1a1a; font-size: .8rem; font-family: var(--font-body); cursor: pointer; color: var(--text-muted); transition: .2s; }
         .metodo-btn.active { border-color: var(--accent); background: rgba(255,180,0,.1); color: white; font-weight: bold; }
-        .btn-modal-confirmar {
-            width: 100%; padding: 14px; background: var(--accent);
-            border: none; border-radius: 6px; color: #000; cursor: pointer;
-            font-family: var(--font-heading); font-size: .95rem;
-            letter-spacing: 1px; margin-top: 8px; transition: .2s;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
+        .btn-modal-confirmar { width: 100%; padding: 14px; background: var(--accent); border: none; border-radius: 6px; color: #000; cursor: pointer; font-family: var(--font-heading); font-size: .95rem; letter-spacing: 1px; margin-top: 8px; transition: .2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-modal-confirmar:hover { background: var(--accent-dark); }
-        .input-modal {
-            width: 100%; background: #1a1a1a; border: 1px solid var(--border);
-            color: white; padding: 10px 14px; border-radius: 4px;
-            font-family: var(--font-body); font-size: .85rem;
-        }
+        .input-modal { width: 100%; background: #1a1a1a; border: 1px solid var(--border); color: white; padding: 10px 14px; border-radius: 4px; font-family: var(--font-body); font-size: .85rem; }
         .input-modal:focus { border-color: var(--accent); outline: none; }
 
         /* ── TOAST ── */
-        .admin-toast {
-            position: fixed; bottom: 24px; right: 24px; z-index: 99999;
-            padding: 12px 20px; border-radius: 6px; font-size: .85rem;
-            font-family: var(--font-body); transform: translateY(80px);
-            opacity: 0; transition: all .3s; pointer-events: none;
-        }
+        .admin-toast { position: fixed; bottom: 24px; right: 24px; z-index: 99999; padding: 12px 20px; border-radius: 6px; font-size: .85rem; font-family: var(--font-body); transform: translateY(80px); opacity: 0; transition: all .3s; pointer-events: none; }
         .admin-toast.visible { transform: translateY(0); opacity: 1; }
         .toast-success { background: #1a3a2a; border: 1px solid #2ecc71; color: #2ecc71; }
         .toast-error   { background: #3a1a1a; border: 1px solid #ff4444; color: #ff4444; }
@@ -413,7 +250,6 @@
             .horarios-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 480px) {
-            .stats-dia-grid { grid-template-columns: 1fr 1fr; }
             .tabs-bar { padding: 0 10px; }
             .tab-btn { padding: 12px 14px; font-size: .85rem; }
         }
@@ -421,7 +257,6 @@
 </head>
 <body>
 
-    <!-- HEADER -->
     <header class="header-admin">
         <div class="logo-admin">
             <h1>PANEL <span>KATANA</span></h1>
@@ -435,7 +270,6 @@
         </div>
     </header>
 
-    <!-- TABS -->
     <nav class="tabs-bar">
         <button class="tab-btn active" onclick="cambiarTab('agenda')">
             <i class="fas fa-calendar-alt"></i> Agenda
@@ -455,25 +289,22 @@
 
         <!-- ══ TAB: AGENDA ══ -->
         <div class="tab-panel active" id="tab-agenda">
-
-            <!-- Stats del día -->
             <div id="admin-stats-dia"></div>
-
-            <!-- Filtro fecha + botón turno manual -->
             <div class="filtro-fecha-row">
                 <input type="date" id="admin-fecha" class="input-fecha" onchange="cargarAgenda()">
                 <button class="btn-turno-manual" onclick="abrirModalTurnoManual()">
                     <i class="fas fa-plus"></i> TURNO MANUAL
                 </button>
             </div>
-
-            <!-- Tabla de turnos -->
             <div class="panel-card" style="padding:0;overflow:hidden">
-                <div id="admin-tabla">
-                    <p class="empty-msg">Cargando...</p>
-                </div>
+                <div id="admin-tabla"><p class="empty-msg">Cargando...</p></div>
             </div>
 
+            <!-- Calendario mensual -->
+            <div class="panel-card" style="margin-top:20px">
+                <h3><i class="fas fa-calendar-alt"></i> Vista del Mes</h3>
+                <div id="calendario-admin"></div>
+            </div>
         </div>
 
         <!-- ══ TAB: ESTADÍSTICAS ══ -->
@@ -493,18 +324,12 @@
                     <h3><i class="fas fa-dollar-sign"></i> Estadísticas Mensuales</h3>
                     <label class="label-horario">Mes</label>
                     <select id="stats-mes" class="select-stats" onchange="cargarStats()">
-                        <option value="1">Enero</option>
-                        <option value="2">Febrero</option>
-                        <option value="3">Marzo</option>
-                        <option value="4">Abril</option>
-                        <option value="5">Mayo</option>
-                        <option value="6">Junio</option>
-                        <option value="7">Julio</option>
-                        <option value="8">Agosto</option>
-                        <option value="9">Septiembre</option>
-                        <option value="10">Octubre</option>
-                        <option value="11">Noviembre</option>
-                        <option value="12">Diciembre</option>
+                        <option value="1">Enero</option><option value="2">Febrero</option>
+                        <option value="3">Marzo</option><option value="4">Abril</option>
+                        <option value="5">Mayo</option><option value="6">Junio</option>
+                        <option value="7">Julio</option><option value="8">Agosto</option>
+                        <option value="9">Septiembre</option><option value="10">Octubre</option>
+                        <option value="11">Noviembre</option><option value="12">Diciembre</option>
                     </select>
                     <label class="label-horario" style="margin-top:10px">Año</label>
                     <select id="stats-anio" class="select-stats" onchange="cargarStats()">
@@ -516,6 +341,32 @@
                 </div>
 
             </div>
+
+            <!-- Rango personalizado -->
+            <div class="panel-card">
+                <h3><i class="fas fa-search"></i> Auditoría por Rango de Fechas</h3>
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+                    <div>
+                        <label class="label-horario">Desde</label>
+                        <input type="date" id="stats-rango-desde" class="input-rango" style="margin-top:4px">
+                    </div>
+                    <div>
+                        <label class="label-horario">Hasta</label>
+                        <input type="date" id="stats-rango-hasta" class="input-rango" style="margin-top:4px">
+                    </div>
+                    <button class="btn-guardar-horarios" style="width:auto;padding:10px 20px;margin-top:18px" onclick="buscarRangoPersonalizado()">
+                        <i class="fas fa-search"></i> FILTRAR
+                    </button>
+                </div>
+                <div id="rango-resultado" class="hidden">
+                    <div class="stats-mes-grid">
+                        <div class="stat-mes-card"><span>TOTAL TURNOS</span><strong id="rango-total-turnos">0</strong></div>
+                        <div class="stat-mes-card"><span>CLIENTES ÚNICOS</span><strong id="rango-clientes-unicos">0</strong></div>
+                        <div class="stat-mes-card" style="grid-column:span 2"><span>RECAUDADO</span><strong style="color:var(--accent);font-size:1.4rem">$<span id="rango-recaudado">0</span></strong></div>
+                    </div>
+                    <div id="rango-grafico-wrap"></div>
+                </div>
+            </div>
         </div>
 
         <!-- ══ TAB: HORARIOS ══ -->
@@ -523,7 +374,7 @@
             <div class="panel-card">
                 <h3><i class="fas fa-clock"></i> Horario de Atención por Día</h3>
                 <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:20px">
-                    Activá mañana y/o tarde por día e ingresá los rangos horarios. El intervalo define cada cuánto se generan los turnos disponibles.
+                    Activá mañana y/o tarde por día e ingresá los rangos. El intervalo define cada cuánto se generan los turnos.
                 </p>
                 <div class="horarios-grid" id="horarios-por-dia">
                     <p style="color:var(--text-muted);font-size:.85rem">Cargando horarios...</p>
@@ -537,23 +388,16 @@
         <!-- ══ TAB: BLOQUEOS ══ -->
         <div class="tab-panel" id="tab-bloqueos">
             <div class="bloqueos-layout">
-
-                <!-- Formulario de bloqueo -->
                 <div class="panel-card">
                     <h3><i class="fas fa-ban"></i> Anular Fecha / Horario</h3>
-
                     <label class="label-bloqueo">Fecha</label>
                     <input type="date" id="bloqueo-fecha" class="input-bloqueo">
-
                     <label class="label-bloqueo">Desde (para rango horario)</label>
                     <input type="time" id="bloqueo-desde" class="input-bloqueo">
-
                     <label class="label-bloqueo">Hasta (para rango horario)</label>
                     <input type="time" id="bloqueo-hasta" class="input-bloqueo">
-
                     <label class="label-bloqueo">Motivo (opcional)</label>
                     <input type="text" id="bloqueo-motivo" class="input-bloqueo" placeholder="Ej: Feriado, vacaciones...">
-
                     <div class="bloqueos-btns">
                         <button class="btn-bloquear btn-bloquear-rango" onclick="crearBloqueoRango()">
                             <i class="fas fa-clock"></i> RANGO HORARIO
@@ -563,21 +407,17 @@
                         </button>
                     </div>
                 </div>
-
-                <!-- Lista de bloqueos activos -->
                 <div class="panel-card">
                     <h3><i class="fas fa-list"></i> Bloqueos Activos</h3>
                     <div id="lista-bloqueos">
                         <p style="font-size:.8rem;color:var(--text-muted)">Sin bloqueos activos ✓</p>
                     </div>
                 </div>
-
             </div>
         </div>
 
     </div>
 
-    <!-- TOAST -->
     <div id="admin-toast" class="admin-toast"></div>
 
     <script src="js/admin.js"></script>

@@ -1,6 +1,7 @@
 // =============================================================
 //  KATANA BARBERSHOP — admin.js (SaaS Turnero)
-//  Versión completa con tabs, stats, ocupación, horarios y bloqueos
+//  Versión completa: tabs, stats, ocupación, horarios, bloqueos,
+//  calendario mensual, rango de fechas, JWT para Safari iOS
 // =============================================================
 
 const API_BASE = 'https://turnos-backend-p9ka.onrender.com/api';
@@ -12,13 +13,18 @@ let PROFESIONAL_ID = null;
 const DIAS_NOMBRE = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const DIAS_CORTO  = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
-// ── fetch autenticado ────────────────────────────────────────────
+// ── fetch autenticado (con JWT para Safari iOS) ──────────────────
 function fetchAdmin(url, options = {}) {
-    return fetch(url, {
+    const opts = {
         ...options,
         credentials: 'include',
         headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
-    });
+    };
+    try {
+        const token = sessionStorage.getItem('admin_token');
+        if (token) opts.headers['Authorization'] = `Bearer ${token}`;
+    } catch(e) {}
+    return fetch(url, opts);
 }
 
 // ── Toast ────────────────────────────────────────────────────────
@@ -41,16 +47,33 @@ async function verificarSesion() {
         const data = await res.json();
         if (data.logueado) {
             PROFESIONAL_ID = data.profesionalId;
+            try {
+                sessionStorage.setItem('admin_pro_id', data.profesionalId);
+                sessionStorage.setItem('admin_logueado', '1');
+            } catch(e) {}
             mostrarPanelAdmin();
             return;
         }
     } catch {}
+
+    // Respaldo sessionStorage (Safari iOS)
+    try {
+        const logueado = sessionStorage.getItem('admin_logueado');
+        const proId    = sessionStorage.getItem('admin_pro_id');
+        if (logueado === '1' && proId) {
+            PROFESIONAL_ID = parseInt(proId);
+            mostrarPanelAdmin();
+            return;
+        }
+    } catch(e) {}
+
     window.location.href = 'login.html';
 }
 
 async function cerrarSesion() {
     if (!confirm('¿Cerrar sesión de administrador?')) return;
     try { await fetchAdmin(`${API}/auth/logout`, { method: 'POST' }); } catch {}
+    try { sessionStorage.clear(); } catch(e) {}
     window.location.href = 'login.html';
 }
 
@@ -61,6 +84,7 @@ function mostrarPanelAdmin() {
     cargarAgenda();
     cargarBloqueos();
     cargarHorariosAdmin();
+    cargarCalendarioGeneralData();
 }
 
 // ════════════════════════════════════════════════════════
@@ -99,6 +123,7 @@ async function cargarAgenda() {
         const res = await fetchAdmin(`${API}/turnos?fecha=${fecha}`);
 
         if (res.status === 403 || res.status === 401) {
+            try { sessionStorage.clear(); } catch(e) {}
             window.location.href = 'login.html';
             return;
         }
@@ -223,6 +248,7 @@ async function cambiarEstado(id, estado) {
         if (!res.ok) throw new Error();
         mostrarToast(`Turno ${estado === 'confirmado' ? 'confirmado ✓' : 'cancelado ✓'}`, estado === 'confirmado' ? 'success' : 'warning');
         cargarAgenda();
+        cargarCalendarioGeneralData();
     } catch { mostrarToast('No se pudo actualizar.', 'error'); }
 }
 
@@ -233,7 +259,67 @@ async function eliminarTurno(id) {
         if (!res.ok) throw new Error();
         mostrarToast('Turno eliminado ✓', 'success');
         cargarAgenda();
+        cargarCalendarioGeneralData();
     } catch { mostrarToast('No se pudo eliminar.', 'error'); }
+}
+
+// ════════════════════════════════════════════════════════
+// CALENDARIO MENSUAL (FullCalendar)
+// ════════════════════════════════════════════════════════
+let calendarGeneral = null;
+
+function inicializarCalendarioGeneral(turnos) {
+    const calendarEl = document.getElementById('calendario-general-admin');
+    if (!calendarEl || typeof FullCalendar === 'undefined') return;
+
+    const eventos = turnos.map(t => {
+        let color = '#ffb400';
+        if (t.estado === 'confirmado') color = '#2ecc71';
+        if (t.estado === 'cancelado')  color = '#ff4444';
+        return {
+            id:              t.id,
+            title:           `${t.cliente_nombre}`,
+            start:           t.fecha_hora,
+            backgroundColor: color,
+            borderColor:     color
+        };
+    });
+
+    if (calendarGeneral) calendarGeneral.destroy();
+
+    calendarGeneral = new FullCalendar.Calendar(calendarEl, {
+        initialView:   'dayGridMonth',
+        locale:        'es',
+        firstDay:      1,
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+        buttonText:    { today: 'Hoy', month: 'Mes', week: 'Semana' },
+        events:        eventos,
+        eventClick: function(info) {
+            const fecha = info.event.startStr.split('T')[0];
+            const input = document.getElementById('admin-fecha');
+            if (input) {
+                input.value = fecha;
+                cargarAgenda();
+                cambiarTab('agenda');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        },
+        height:      'auto',
+        aspectRatio: 1.4
+    });
+
+    calendarGeneral.render();
+}
+
+async function cargarCalendarioGeneralData() {
+    try {
+        const res = await fetchAdmin(`${API}/turnos`);
+        if (res.ok) {
+            const data   = await res.json();
+            const turnos = Array.isArray(data) ? data : (data.turnos || []);
+            inicializarCalendarioGeneral(turnos);
+        }
+    } catch {}
 }
 
 // ════════════════════════════════════════════════════════
@@ -429,6 +515,7 @@ async function guardarTurnoManual() {
         cerrarModalTurnoManual();
         const fechaAgenda = document.getElementById('admin-fecha')?.value;
         if (fechaAgenda === fecha) cargarAgenda();
+        cargarCalendarioGeneralData();
     } catch (err) {
         errorEl.textContent   = err.message || 'Error de conexión.';
         errorEl.style.display = 'block';
@@ -490,7 +577,7 @@ async function cargarOcupacion() {
                 </div>
                 <div class="ocup-dias-titulo">TURNOS POR DÍA ESTA SEMANA</div>
                 <div class="ocup-dias-barras">${barrasDia}</div>
-                ${d.mejor_dia !== undefined && d.mejor_dia !== null ? `<div class="ocup-mejor-dia">⭐ Mejor día histórico: <strong>${DIAS_NOMBRE[d.mejor_dia]}</strong></div>` : ''}
+                ${d.mejor_dia !== undefined && d.mejor_dia !== null ? `<div class="ocup-mejor-dia">⭐ Mejor día histórico: <strong>${DIAS_NOMBRE[d.mejor_dia.dia || d.mejor_dia]}</strong></div>` : ''}
             </div>`;
     } catch {
         contenedor.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem">No se pudo cargar la ocupación.</p>';
@@ -518,6 +605,66 @@ async function cargarStats() {
             </div>`;
     } catch {
         cont.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:16px 0">No se pudieron cargar las estadísticas.</p>';
+    }
+}
+
+// ════════════════════════════════════════════════════════
+// ESTADÍSTICAS — RANGO DE FECHAS
+// ════════════════════════════════════════════════════════
+async function buscarRangoPersonalizado() {
+    const desde = document.getElementById('stats-rango-desde').value;
+    const hasta = document.getElementById('stats-rango-hasta').value;
+    const cont  = document.getElementById('rango-resultado');
+    if (!desde || !hasta) { mostrarToast('Seleccioná las dos fechas.', 'error'); return; }
+
+    try {
+        const res = await fetchAdmin(`${API}/turnos/stats-rango?desde=${desde}&hasta=${hasta}`);
+        if (!res.ok) throw new Error();
+        const d = await res.json();
+
+        document.getElementById('rango-total-turnos').textContent   = d.total_turnos    || 0;
+        document.getElementById('rango-clientes-unicos').textContent = d.clientes_unicos || 0;
+        document.getElementById('rango-recaudado').textContent       = Number(d.recaudado || 0).toLocaleString('es-AR');
+        cont.classList.remove('hidden');
+
+        await cargarGraficoRango(desde, hasta);
+    } catch { mostrarToast('Error al buscar el rango.', 'error'); }
+}
+
+async function cargarGraficoRango(desde, hasta) {
+    const wrap = document.getElementById('rango-grafico-wrap');
+    if (!wrap) return;
+    wrap.innerHTML = '<p style="color:var(--text-muted);font-size:.8rem">Cargando gráfico...</p>';
+
+    try {
+        const res  = await fetchAdmin(`${API}/turnos/stats-rango-dias?desde=${desde}&hasta=${hasta}`);
+        if (!res.ok) throw new Error();
+        const dias = await res.json();
+
+        if (!dias.length) {
+            wrap.innerHTML = `<div class="rango-grafico-card"><div class="rango-grafico-titulo">Turnos por día</div><div style="text-align:center;padding:20px;color:var(--text-muted);font-size:.85rem">Sin turnos en este período</div></div>`;
+            return;
+        }
+
+        const maxTurnos = Math.max(...dias.map(d => d.total), 1);
+        const barras = dias.map(d => {
+            const [, mes, dia] = d.fecha.split('-');
+            const altura = d.total > 0 ? Math.max(Math.round((d.total / maxTurnos) * 70), 4) : 2;
+            return `
+                <div class="rango-bar-wrap">
+                    <div class="rango-bar-num">${d.total > 0 ? d.total : ''}</div>
+                    <div class="rango-bar" style="height:${altura}px"></div>
+                    <div class="rango-bar-label">${dia}/${mes}</div>
+                </div>`;
+        }).join('');
+
+        wrap.innerHTML = `
+            <div class="rango-grafico-card">
+                <div class="rango-grafico-titulo">TURNOS POR DÍA DEL PERÍODO</div>
+                <div class="rango-barras-scroll">${barras}</div>
+            </div>`;
+    } catch {
+        wrap.innerHTML = '<p style="color:var(--text-muted);font-size:.8rem">No se pudo cargar el gráfico.</p>';
     }
 }
 
