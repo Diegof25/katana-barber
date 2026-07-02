@@ -1,7 +1,8 @@
 // =============================================================
 //  KATANA BARBERSHOP — admin.js (SaaS Turnero)
 //  Versión completa: tabs, stats, ocupación, horarios, bloqueos,
-//  calendario mensual, rango de fechas, JWT para Safari iOS
+//  calendario mensual, rango de fechas, JWT para Safari iOS,
+//  cursos de barbería (solo visible para Luciano)
 // =============================================================
 
 const API_BASE = 'https://turnos-backend-p9ka.onrender.com/api';
@@ -10,8 +11,14 @@ const API      = `${API_BASE}/${SLUG}`;
 
 let PROFESIONAL_ID = null;
 
-const DIAS_NOMBRE = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-const DIAS_CORTO  = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const DIAS_NOMBRE  = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const DIAS_CORTO   = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const MESES_CORTO  = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+// IDs de profesional que tienen la pestaña "Cursos" habilitada.
+// Luciano = profesional_id 3. Si mañana otro barbero también da
+// clases, solo hay que agregar su id acá.
+const CURSOS_HABILITADO_PARA = [3];
 
 // ── fetch autenticado (con JWT para Safari iOS) ──────────────────
 function fetchAdmin(url, options = {}) {
@@ -85,6 +92,11 @@ function mostrarPanelAdmin() {
     cargarBloqueos();
     cargarHorariosAdmin();
     cargarCalendarioGeneralData();
+
+    // Mostrar pestaña "Cursos" solo para los profesionales habilitados (Luciano)
+    if (CURSOS_HABILITADO_PARA.includes(PROFESIONAL_ID)) {
+        document.getElementById('tab-btn-cursos')?.classList.remove('hidden');
+    }
 }
 
 // ════════════════════════════════════════════════════════
@@ -98,6 +110,9 @@ function cambiarTab(tab) {
     if (tab === 'stats') {
         cargarOcupacion();
         cargarStats();
+    }
+    if (tab === 'cursos') {
+        cargarCursos();
     }
 }
 
@@ -585,7 +600,7 @@ async function cargarOcupacion() {
 }
 
 // ════════════════════════════════════════════════════════
-// ESTADÍSTICAS — MENSUALES
+// ESTADÍSTICAS — MENSUALES (turnos + cursos combinados)
 // ════════════════════════════════════════════════════════
 async function cargarStats() {
     const mes  = document.getElementById('stats-mes')?.value  || (new Date().getMonth() + 1);
@@ -596,12 +611,35 @@ async function cargarStats() {
         const res = await fetchAdmin(`${API}/turnos/stats?mes=${mes}&anio=${anio}`);
         if (!res.ok) throw new Error();
         const d = await res.json();
+        const recaudadoCortes = Number(d.recaudado || 0);
+
+        const tieneCursos = CURSOS_HABILITADO_PARA.includes(PROFESIONAL_ID);
+        let recaudadoCurso = 0;
+
+        if (tieneCursos) {
+            try {
+                const resC = await fetchAdmin(`${API}/cursos/stats?mes=${mes}&anio=${anio}`);
+                if (resC.ok) {
+                    const dc = await resC.json();
+                    recaudadoCurso = Number(dc.recaudado_curso || 0);
+                }
+            } catch {}
+        }
+
+        const total = recaudadoCortes + recaudadoCurso;
+
         cont.innerHTML = `
             <div class="stats-mes-grid">
                 <div class="stat-mes-card"><span>TOTAL TURNOS</span><strong>${d.total_turnos || 0}</strong></div>
                 <div class="stat-mes-card"><span>COBRADOS</span><strong style="color:#2ecc71">${d.cobrados || 0}</strong></div>
                 <div class="stat-mes-card"><span>PENDIENTES</span><strong style="color:#f1c40f">${d.pendientes || 0}</strong></div>
-                <div class="stat-mes-card"><span>RECAUDADO</span><strong style="color:var(--accent);font-size:1.4rem">$${Number(d.recaudado || 0).toLocaleString('es-AR')}</strong></div>
+                <div class="stat-mes-card"><span>${tieneCursos ? 'RECAUDADO CORTES' : 'RECAUDADO'}</span><strong style="color:var(--accent);font-size:1.4rem">$${recaudadoCortes.toLocaleString('es-AR')}</strong></div>
+                ${tieneCursos ? `
+                <div class="stat-mes-card"><span>RECAUDADO CURSO</span><strong style="color:var(--accent);font-size:1.4rem">$${recaudadoCurso.toLocaleString('es-AR')}</strong></div>
+                <div class="stat-mes-card" style="grid-column:span 2;background:rgba(255,180,0,.08);border-color:rgba(255,180,0,.3)">
+                    <span>TOTAL GENERAL (CORTES + CURSO)</span>
+                    <strong style="color:var(--accent);font-size:1.7rem">$${total.toLocaleString('es-AR')}</strong>
+                </div>` : ''}
             </div>`;
     } catch {
         cont.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:16px 0">No se pudieron cargar las estadísticas.</p>';
@@ -841,6 +879,179 @@ async function eliminarBloqueo(id) {
 }
 
 // ════════════════════════════════════════════════════════
+// CURSOS DE BARBERÍA (solo Luciano — ver CURSOS_HABILITADO_PARA)
+// ════════════════════════════════════════════════════════
+
+async function cargarCursos() {
+    const anio    = document.getElementById('cursos-anio')?.value || new Date().getFullYear();
+    const cont    = document.getElementById('cursos-lista');
+    const resumen = document.getElementById('cursos-stats-resumen');
+    if (!cont) return;
+    cont.innerHTML = '<p class="empty-msg">Cargando...</p>';
+
+    try {
+        const res = await fetchAdmin(`${API}/cursos/alumnos?anio=${anio}`);
+        if (!res.ok) throw new Error();
+        const alumnos = await res.json();
+        renderAlumnos(alumnos, anio);
+
+        const mesActual = new Date().getMonth() + 1;
+        const resStats   = await fetchAdmin(`${API}/cursos/stats?mes=${mesActual}&anio=${anio}`);
+        if (resStats.ok && resumen) {
+            const s = await resStats.json();
+            resumen.innerHTML = `
+                <div class="stat-dia-card"><span>ALUMNOS ACTIVOS</span><strong>${s.alumnos_activos || 0}</strong></div>
+                <div class="stat-dia-card"><span>PAGARON ESTE MES</span><strong style="color:#2ecc71">${s.pagados || 0}</strong></div>
+                <div class="stat-dia-card"><span>RECAUDADO CURSO (MES)</span><strong style="color:var(--accent)">$${Number(s.recaudado_curso || 0).toLocaleString('es-AR')}</strong></div>`;
+        }
+    } catch (e) {
+        console.error(e);
+        cont.innerHTML = '<p class="empty-msg">Error al cargar los alumnos.</p>';
+    }
+}
+
+function renderAlumnos(alumnos, anio) {
+    const cont = document.getElementById('cursos-lista');
+    if (!cont) return;
+    if (!alumnos.length) {
+        cont.innerHTML = '<div class="no-datos"><i class="fas fa-user-graduate"></i><span>Todavía no cargaste alumnos del curso.</span></div>';
+        return;
+    }
+
+    cont.innerHTML = alumnos.map(a => {
+        const pagosPorMes = {};
+        (a.pagos || []).forEach(p => { pagosPorMes[p.mes] = p; });
+
+        const mesesHtml = MESES_CORTO.map((nombreMes, idx) => {
+            const mes    = idx + 1;
+            const pago   = pagosPorMes[mes];
+            const pagado = !!(pago && pago.pagado);
+            return `<button class="mes-pago-btn ${pagado ? 'pagado' : ''}"
+                        onclick="togglePagoMes(${a.id}, ${mes}, ${anio}, ${!pagado})"
+                        title="${pagado ? 'Pagó ' + nombreMes : 'Marcar ' + nombreMes + ' como pagado'}">
+                        ${pagado ? '✓ ' : ''}${nombreMes}
+                    </button>`;
+        }).join('');
+
+        const fechaInicio = (a.fecha_inicio || '').split('T')[0];
+
+        return `
+            <div class="alumno-card">
+                <div class="alumno-card-header">
+                    <span class="alumno-card-nombre">${a.nombre}</span>
+                    <button class="btn-mini-delete" onclick="eliminarAlumno(${a.id})" title="Eliminar alumno">×</button>
+                </div>
+                <div class="alumno-card-sub">
+                    Cuota: <strong style="color:#2ecc71">$${Number(a.monto_mensual).toLocaleString('es-AR')}</strong>
+                    · Desde ${fechaInicio}
+                    ${a.telefono ? ` · <a href="https://wa.me/54${a.telefono}" target="_blank" style="color:#25d366">WhatsApp</a>` : ''}
+                </div>
+                <div class="alumno-meses-grid">${mesesHtml}</div>
+            </div>`;
+    }).join('');
+}
+
+async function togglePagoMes(alumnoId, mes, anio, pagado) {
+    try {
+        const res = await fetchAdmin(`${API}/cursos/pagos`, {
+            method: 'PATCH',
+            body: JSON.stringify({ alumno_id: alumnoId, mes, anio, pagado })
+        });
+        if (!res.ok) throw new Error();
+        mostrarToast(pagado ? 'Cuota marcada como pagada ✓' : 'Cuota marcada como pendiente', 'success');
+        cargarCursos();
+    } catch { mostrarToast('No se pudo actualizar el pago.', 'error'); }
+}
+
+function abrirModalAlumno() {
+    let modal = document.getElementById('modal-alumno');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id        = 'modal-alumno';
+        modal.className = 'modal-overlay';
+        document.body.appendChild(modal);
+    }
+    const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
+
+    modal.innerHTML = `
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus" style="color:var(--accent)"></i> Agregar alumno</h3>
+                <button class="modal-close" onclick="cerrarModalAlumno()">✕</button>
+            </div>
+            <div class="modal-row">
+                <label class="modal-label">Nombre *</label>
+                <input type="text" id="alumno-nombre" class="input-modal" placeholder="Ej: Martín Pérez" />
+            </div>
+            <div class="modal-row">
+                <label class="modal-label">Teléfono</label>
+                <input type="tel" id="alumno-telefono" class="input-modal" placeholder="Ej: 3454123456" />
+            </div>
+            <div class="modal-row">
+                <label class="modal-label">Fecha de inicio *</label>
+                <input type="date" id="alumno-fecha" class="input-modal" value="${hoy}" />
+            </div>
+            <div class="modal-row">
+                <label class="modal-label">Cuota mensual *</label>
+                <input type="number" id="alumno-monto" class="input-modal" placeholder="Ej: 15000" />
+            </div>
+            <p id="alumno-error" style="color:#ff4444;font-size:.8rem;display:none;margin-bottom:10px"></p>
+            <button class="btn-modal-confirmar" onclick="guardarAlumno()">
+                <i class="fas fa-check-circle"></i> GUARDAR ALUMNO
+            </button>
+        </div>`;
+    modal.classList.add('visible');
+}
+
+function cerrarModalAlumno() {
+    document.getElementById('modal-alumno')?.classList.remove('visible');
+}
+
+async function guardarAlumno() {
+    const nombre        = document.getElementById('alumno-nombre')?.value.trim();
+    const telefono      = document.getElementById('alumno-telefono')?.value.trim();
+    const fecha_inicio  = document.getElementById('alumno-fecha')?.value;
+    const monto_mensual = parseFloat(document.getElementById('alumno-monto')?.value);
+    const errorEl       = document.getElementById('alumno-error');
+    errorEl.style.display = 'none';
+
+    if (!nombre || !fecha_inicio || !monto_mensual) {
+        errorEl.textContent   = 'Completá nombre, fecha de inicio y cuota mensual.';
+        errorEl.style.display = 'block';
+        return;
+    }
+
+    try {
+        const res = await fetchAdmin(`${API}/cursos/alumnos`, {
+            method: 'POST',
+            body: JSON.stringify({
+                nombre,
+                telefono: telefono ? telefono.replace(/\D/g, '') : null,
+                fecha_inicio,
+                monto_mensual
+            })
+        });
+        if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Error al guardar'); }
+        mostrarToast('Alumno agregado ✓', 'success');
+        cerrarModalAlumno();
+        cargarCursos();
+    } catch (err) {
+        errorEl.textContent   = err.message || 'Error de conexión.';
+        errorEl.style.display = 'block';
+    }
+}
+
+async function eliminarAlumno(id) {
+    if (!confirm('¿Eliminar este alumno y todo su historial de pagos? No se puede deshacer.')) return;
+    try {
+        const res = await fetchAdmin(`${API}/cursos/alumnos/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error();
+        mostrarToast('Alumno eliminado ✓', 'success');
+        cargarCursos();
+    } catch { mostrarToast('No se pudo eliminar.', 'error'); }
+}
+
+// ════════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
@@ -849,4 +1060,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (selectAnio) selectAnio.value = new Date().getFullYear();
     const selectMes = document.getElementById('stats-mes');
     if (selectMes) selectMes.value = new Date().getMonth() + 1;
+    const cursosAnio = document.getElementById('cursos-anio');
+    if (cursosAnio) cursosAnio.value = new Date().getFullYear();
 });
