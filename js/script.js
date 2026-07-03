@@ -162,7 +162,15 @@ async function cargarHorariosDisponibles(fechaElegida) {
 // ------------------------------------------------------------------
 // 5. Confirmar Reserva
 // ------------------------------------------------------------------
+
+// Bandera para evitar que un segundo click (o un doble-tap en el celular)
+// dispare otro guardado mientras el primero todavía está en curso.
+let reservaEnCurso = false;
+
 document.getElementById('btn-confirmar').onclick = async () => {
+    // Corte inmediato: si ya hay una reserva en camino, ignoramos el click.
+    if (reservaEnCurso) return;
+
     const nombre   = document.getElementById('nombre').value;
     const telefono = document.getElementById('telefono').value;
     const fecha    = document.getElementById('fecha').value;
@@ -184,7 +192,7 @@ document.getElementById('btn-confirmar').onclick = async () => {
     // Formato requerido por el SaaS: "YYYY-MM-DDTHH:MM:00-03:00"
     const fechaHoraSaaS = `${fecha}T${hora}:00-03:00`;
 
-const body = {
+    const body = {
         profesional_id: profesionalId,
         servicio_id:    parseInt(servicioId),
         cliente_nombre: nombre,
@@ -192,6 +200,14 @@ const body = {
         fecha_hora:     fechaHoraSaaS,
         notas:          ''
     };
+
+    // A partir de acá ya se está enviando: bloqueamos el botón y avisamos
+    // visualmente, así nadie hace click 3 veces pensando que "no anduvo".
+    const btnConfirmar   = document.getElementById('btn-confirmar');
+    const textoOriginal  = btnConfirmar.innerHTML;
+    reservaEnCurso = true;
+    btnConfirmar.disabled = true;
+    btnConfirmar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> GUARDANDO...';
 
     try {
         const res = await fetch(`${API}/turnos`, {
@@ -222,13 +238,21 @@ const body = {
             alert(`✅ ¡Turno guardado con ${nombreBarbero}! Ahora te redirigimos a su WhatsApp.`);
             window.location.href = `https://wa.me/${nroBarbero}?text=${mensajeWsp}`;
             setTimeout(() => { window.location.reload(); }, 1500);
+            // No reactivamos el botón acá a propósito: la página se va a
+            // recargar sola en un instante (redirección a WhatsApp + reload).
 
         } else {
             alert('❌ Error: ' + (result.error || 'No se pudo guardar el turno'));
+            reservaEnCurso = false;
+            btnConfirmar.disabled = false;
+            btnConfirmar.innerHTML = textoOriginal;
         }
 
     } catch (error) {
         alert('❌ Error de conexión al servidor');
+        reservaEnCurso = false;
+        btnConfirmar.disabled = false;
+        btnConfirmar.innerHTML = textoOriginal;
     }
 };
 
