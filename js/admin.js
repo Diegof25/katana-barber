@@ -882,17 +882,22 @@ async function eliminarBloqueo(id) {
 // CURSOS DE BARBERÍA (solo Luciano — ver CURSOS_HABILITADO_PARA)
 // ════════════════════════════════════════════════════════
 
+// Cache del último listado cargado (para exportar CSV sin re-pedirlo)
+let CURSOS_CACHE = { anio: null, alumnos: [] };
+
 async function cargarCursos() {
-    const anio    = document.getElementById('cursos-anio')?.value || new Date().getFullYear();
-    const cont    = document.getElementById('cursos-lista');
-    const resumen = document.getElementById('cursos-stats-resumen');
+    const anio            = document.getElementById('cursos-anio')?.value || new Date().getFullYear();
+    const verInactivos    = document.getElementById('cursos-ver-inactivos')?.checked;
+    const cont            = document.getElementById('cursos-lista');
+    const resumen         = document.getElementById('cursos-stats-resumen');
     if (!cont) return;
     cont.innerHTML = '<p class="empty-msg">Cargando...</p>';
 
     try {
-        const res = await fetchAdmin(`${API}/cursos/alumnos?anio=${anio}`);
+        const res = await fetchAdmin(`${API}/cursos/alumnos?anio=${anio}${verInactivos ? '&incluir_inactivos=1' : ''}`);
         if (!res.ok) throw new Error();
         const alumnos = await res.json();
+        CURSOS_CACHE = { anio, alumnos };
         renderAlumnos(alumnos, anio);
 
         const mesActual = new Date().getMonth() + 1;
@@ -910,6 +915,24 @@ async function cargarCursos() {
     }
 }
 
+// Calcula si un mes/año determinado está "vencido": es anterior o igual al
+// mes actual, es posterior o igual a la fecha de inicio del alumno, y no
+// fue marcado como pagado.
+function esMesVencido(alumno, mes, anio, pagado) {
+    if (pagado) return false;
+    const hoy = new Date();
+    const cursorMes = new Date(anio, mes - 1, 1);
+    const mesActualCursor = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    if (cursorMes > mesActualCursor) return false; // mes futuro, todavía no corresponde
+
+    const inicio = alumno.fecha_inicio ? new Date(alumno.fecha_inicio) : null;
+    if (inicio) {
+        const inicioCursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
+        if (cursorMes < inicioCursor) return false; // antes de que empezara
+    }
+    return true;
+}
+
 function renderAlumnos(alumnos, anio) {
     const cont = document.getElementById('cursos-lista');
     if (!cont) return;
@@ -922,48 +945,133 @@ function renderAlumnos(alumnos, anio) {
         const pagosPorMes = {};
         (a.pagos || []).forEach(p => { pagosPorMes[p.mes] = p; });
 
+        let mesesVencidos = 0;
         const mesesHtml = MESES_CORTO.map((nombreMes, idx) => {
             const mes    = idx + 1;
             const pago   = pagosPorMes[mes];
             const pagado = !!(pago && pago.pagado);
-            return `<button class="mes-pago-btn ${pagado ? 'pagado' : ''}"
-                        onclick="togglePagoMes(${a.id}, ${mes}, ${anio}, ${!pagado})"
-                        title="${pagado ? 'Pagó ' + nombreMes : 'Marcar ' + nombreMes + ' como pagado'}">
-                        ${pagado ? '✓ ' : ''}${nombreMes}
+            const vencido = a.activo && esMesVencido(a, mes, anio, pagado);
+            if (vencido) mesesVencidos++;
+            const montoStr = pago ? pago.monto : '';
+            return `<button class="mes-pago-btn ${pagado ? 'pagado' : ''} ${vencido ? 'vencido' : ''}"
+                        onclick="abrirModalPago(${a.id}, ${mes}, ${anio}, '${nombreMes}', ${pagado}, ${montoStr || a.monto_mensual}, '${pago?.metodo_pago || 'efectivo'}')"
+                        title="${pagado ? 'Pagó ' + nombreMes + (pago.metodo_pago ? ' · ' + pago.metodo_pago : '') : (vencido ? nombreMes + ' vencido sin pagar' : 'Marcar ' + nombreMes)}">
+                        ${pagado ? '✓ ' : (vencido ? '⚠ ' : '')}${nombreMes}
                     </button>`;
         }).join('');
 
         const fechaInicio = (a.fecha_inicio || '').split('T')[0];
+        const inactivo = a.activo === false;
 
         return `
-            <div class="alumno-card">
+            <div class="alumno-card ${inactivo ? 'inactivo' : ''}">
                 <div class="alumno-card-header">
-                    <span class="alumno-card-nombre">${a.nombre}</span>
-                    <button class="btn-mini-delete" onclick="eliminarAlumno(${a.id})" title="Eliminar alumno">×</button>
+                    <div class="alumno-card-nombre-wrap">
+                        <span class="alumno-card-nombre">${a.nombre}</span>
+                        ${inactivo ? '<span class="badge-inactivo">Dado de baja</span>' : ''}
+                        ${!inactivo && mesesVencidos > 0 ? `<span class="badge-mora">${mesesVencidos} mes${mesesVencidos > 1 ? 'es' : ''} vencido${mesesVencidos > 1 ? 's' : ''}</span>` : ''}
+                    </div>
+                    <div class="alumno-card-acciones">
+                        ${inactivo
+                            ? `<button class="btn-icono-mini" onclick="reactivarAlumno(${a.id})" title="Reactivar"><i class="fas fa-undo"></i></button>
+                               <button class="btn-mini-delete" onclick="eliminarAlumnoDefinitivo(${a.id})" title="Eliminar definitivamente">×</button>`
+                            : `<button class="btn-icono-mini" onclick="abrirModalAlumno(${a.id})" title="Editar"><i class="fas fa-pen"></i></button>
+                               <button class="btn-icono-mini" onclick="darDeBajaAlumno(${a.id})" title="Dar de baja"><i class="fas fa-user-slash"></i></button>`
+                        }
+                    </div>
                 </div>
                 <div class="alumno-card-sub">
                     Cuota: <strong style="color:#2ecc71">$${Number(a.monto_mensual).toLocaleString('es-AR')}</strong>
                     · Desde ${fechaInicio}
+                    · Total histórico: <strong style="color:var(--accent)">$${Number(a.total_historico || 0).toLocaleString('es-AR')}</strong>
                     ${a.telefono ? ` · <a href="https://wa.me/54${a.telefono}" target="_blank" style="color:#25d366">WhatsApp</a>` : ''}
                 </div>
+                ${a.notas ? `<div class="alumno-card-notas"><i class="fas fa-sticky-note"></i> ${a.notas}</div>` : ''}
                 <div class="alumno-meses-grid">${mesesHtml}</div>
             </div>`;
     }).join('');
 }
 
-async function togglePagoMes(alumnoId, mes, anio, pagado) {
+// ── Modal de pago (marcar / editar / quitar un mes puntual) ──────
+function abrirModalPago(alumnoId, mes, anio, nombreMes, pagado, montoActual, metodoActual) {
+    let modal = document.getElementById('modal-pago-curso');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id        = 'modal-pago-curso';
+        modal.className = 'modal-overlay';
+        document.body.appendChild(modal);
+    }
+    modal.innerHTML = `
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fas fa-dollar-sign" style="color:var(--accent)"></i> ${nombreMes} ${anio}</h3>
+                <button class="modal-close" onclick="cerrarModalPago()">✕</button>
+            </div>
+            <div class="modal-row">
+                <label class="modal-label">Monto</label>
+                <input type="number" id="pago-monto" class="input-modal" value="${montoActual}" />
+            </div>
+            <div class="modal-row">
+                <label class="modal-label">Método de pago</label>
+                <div class="modal-metodos">
+                    <button class="metodo-btn ${metodoActual === 'efectivo' ? 'active' : ''}" id="pmetodo-efectivo" onclick="seleccionarMetodoPago('efectivo')">💵 Efectivo</button>
+                    <button class="metodo-btn ${metodoActual === 'transferencia' ? 'active' : ''}" id="pmetodo-transferencia" onclick="seleccionarMetodoPago('transferencia')">📲 Transferencia</button>
+                    <button class="metodo-btn ${metodoActual === 'debito' ? 'active' : ''}" id="pmetodo-debito" onclick="seleccionarMetodoPago('debito')">💳 Débito</button>
+                </div>
+            </div>
+            <button class="btn-modal-confirmar" onclick="guardarPagoModal(${alumnoId}, ${mes}, ${anio})">
+                <i class="fas fa-check-circle"></i> ${pagado ? 'GUARDAR CAMBIOS' : 'MARCAR COMO PAGADO'}
+            </button>
+            ${pagado ? `<button class="btn-modal-confirmar" style="background:#333;color:white;margin-top:8px" onclick="quitarPago(${alumnoId}, ${mes}, ${anio})">
+                <i class="fas fa-times"></i> QUITAR PAGO
+            </button>` : ''}
+        </div>`;
+    modal.classList.add('visible');
+    modal._metodo = metodoActual || 'efectivo';
+}
+
+function seleccionarMetodoPago(metodo) {
+    document.querySelectorAll('.modal-metodos .metodo-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`pmetodo-${metodo}`)?.classList.add('active');
+    document.getElementById('modal-pago-curso')._metodo = metodo;
+}
+
+function cerrarModalPago() {
+    document.getElementById('modal-pago-curso')?.classList.remove('visible');
+}
+
+async function guardarPagoModal(alumnoId, mes, anio) {
+    const modal  = document.getElementById('modal-pago-curso');
+    const monto  = parseFloat(document.getElementById('pago-monto')?.value);
+    const metodo = modal?._metodo || 'efectivo';
+    if (!monto || monto <= 0) { mostrarToast('Ingresá un monto válido.', 'error'); return; }
     try {
         const res = await fetchAdmin(`${API}/cursos/pagos`, {
             method: 'PATCH',
-            body: JSON.stringify({ alumno_id: alumnoId, mes, anio, pagado })
+            body: JSON.stringify({ alumno_id: alumnoId, mes, anio, pagado: true, monto, metodo_pago: metodo })
         });
         if (!res.ok) throw new Error();
-        mostrarToast(pagado ? 'Cuota marcada como pagada ✓' : 'Cuota marcada como pendiente', 'success');
+        mostrarToast('Pago guardado ✓', 'success');
+        cerrarModalPago();
         cargarCursos();
-    } catch { mostrarToast('No se pudo actualizar el pago.', 'error'); }
+    } catch { mostrarToast('No se pudo guardar el pago.', 'error'); }
 }
 
-function abrirModalAlumno() {
+async function quitarPago(alumnoId, mes, anio) {
+    try {
+        const res = await fetchAdmin(`${API}/cursos/pagos`, {
+            method: 'PATCH',
+            body: JSON.stringify({ alumno_id: alumnoId, mes, anio, pagado: false })
+        });
+        if (!res.ok) throw new Error();
+        mostrarToast('Pago quitado', 'success');
+        cerrarModalPago();
+        cargarCursos();
+    } catch { mostrarToast('No se pudo actualizar.', 'error'); }
+}
+
+// ── Modal alumno (crear o editar) ─────────────────────────────────
+function abrirModalAlumno(alumnoId = null) {
     let modal = document.getElementById('modal-alumno');
     if (!modal) {
         modal = document.createElement('div');
@@ -971,33 +1079,40 @@ function abrirModalAlumno() {
         modal.className = 'modal-overlay';
         document.body.appendChild(modal);
     }
-    const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
+    const esEdicion = !!alumnoId;
+    const alumno    = esEdicion ? CURSOS_CACHE.alumnos.find(a => a.id === alumnoId) : null;
+    const hoy       = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
 
     modal.innerHTML = `
         <div class="modal-card">
             <div class="modal-header">
-                <h3><i class="fas fa-user-plus" style="color:var(--accent)"></i> Agregar alumno</h3>
+                <h3><i class="fas fa-user-${esEdicion ? 'edit' : 'plus'}" style="color:var(--accent)"></i> ${esEdicion ? 'Editar alumno' : 'Agregar alumno'}</h3>
                 <button class="modal-close" onclick="cerrarModalAlumno()">✕</button>
             </div>
             <div class="modal-row">
                 <label class="modal-label">Nombre *</label>
-                <input type="text" id="alumno-nombre" class="input-modal" placeholder="Ej: Martín Pérez" />
+                <input type="text" id="alumno-nombre" class="input-modal" placeholder="Ej: Martín Pérez" value="${alumno?.nombre || ''}" />
             </div>
             <div class="modal-row">
                 <label class="modal-label">Teléfono</label>
-                <input type="tel" id="alumno-telefono" class="input-modal" placeholder="Ej: 3454123456" />
+                <input type="tel" id="alumno-telefono" class="input-modal" placeholder="Ej: 3454123456" value="${alumno?.telefono || ''}" />
             </div>
             <div class="modal-row">
                 <label class="modal-label">Fecha de inicio *</label>
-                <input type="date" id="alumno-fecha" class="input-modal" value="${hoy}" />
+                <input type="date" id="alumno-fecha" class="input-modal" value="${alumno ? (alumno.fecha_inicio || '').split('T')[0] : hoy}" />
             </div>
             <div class="modal-row">
                 <label class="modal-label">Cuota mensual *</label>
-                <input type="number" id="alumno-monto" class="input-modal" placeholder="Ej: 15000" />
+                <input type="number" id="alumno-monto" class="input-modal" placeholder="Ej: 15000" value="${alumno?.monto_mensual || ''}" />
+                ${esEdicion ? '<p style="font-size:.7rem;color:var(--text-muted);margin-top:6px">Los meses ya marcados como pagados mantienen el monto con el que se cobraron.</p>' : ''}
+            </div>
+            <div class="modal-row">
+                <label class="modal-label">Notas</label>
+                <input type="text" id="alumno-notas" class="input-modal" placeholder="Ej: va los martes y jueves" value="${alumno?.notas || ''}" />
             </div>
             <p id="alumno-error" style="color:#ff4444;font-size:.8rem;display:none;margin-bottom:10px"></p>
-            <button class="btn-modal-confirmar" onclick="guardarAlumno()">
-                <i class="fas fa-check-circle"></i> GUARDAR ALUMNO
+            <button class="btn-modal-confirmar" onclick="guardarAlumno(${esEdicion ? alumnoId : 'null'})">
+                <i class="fas fa-check-circle"></i> ${esEdicion ? 'GUARDAR CAMBIOS' : 'GUARDAR ALUMNO'}
             </button>
         </div>`;
     modal.classList.add('visible');
@@ -1007,11 +1122,12 @@ function cerrarModalAlumno() {
     document.getElementById('modal-alumno')?.classList.remove('visible');
 }
 
-async function guardarAlumno() {
+async function guardarAlumno(alumnoId) {
     const nombre        = document.getElementById('alumno-nombre')?.value.trim();
     const telefono      = document.getElementById('alumno-telefono')?.value.trim();
     const fecha_inicio  = document.getElementById('alumno-fecha')?.value;
     const monto_mensual = parseFloat(document.getElementById('alumno-monto')?.value);
+    const notas         = document.getElementById('alumno-notas')?.value.trim();
     const errorEl       = document.getElementById('alumno-error');
     errorEl.style.display = 'none';
 
@@ -1021,18 +1137,20 @@ async function guardarAlumno() {
         return;
     }
 
+    const payload = {
+        nombre,
+        telefono: telefono ? telefono.replace(/\D/g, '') : null,
+        fecha_inicio,
+        monto_mensual,
+        notas: notas || null
+    };
+
     try {
-        const res = await fetchAdmin(`${API}/cursos/alumnos`, {
-            method: 'POST',
-            body: JSON.stringify({
-                nombre,
-                telefono: telefono ? telefono.replace(/\D/g, '') : null,
-                fecha_inicio,
-                monto_mensual
-            })
-        });
+        const res = alumnoId
+            ? await fetchAdmin(`${API}/cursos/alumnos/${alumnoId}`, { method: 'PATCH', body: JSON.stringify(payload) })
+            : await fetchAdmin(`${API}/cursos/alumnos`, { method: 'POST', body: JSON.stringify(payload) });
         if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Error al guardar'); }
-        mostrarToast('Alumno agregado ✓', 'success');
+        mostrarToast(alumnoId ? 'Alumno actualizado ✓' : 'Alumno agregado ✓', 'success');
         cerrarModalAlumno();
         cargarCursos();
     } catch (err) {
@@ -1041,14 +1159,79 @@ async function guardarAlumno() {
     }
 }
 
-async function eliminarAlumno(id) {
-    if (!confirm('¿Eliminar este alumno y todo su historial de pagos? No se puede deshacer.')) return;
+// ── Baja lógica / reactivar / eliminar definitivo ─────────────────
+async function darDeBajaAlumno(id) {
+    if (!confirm('¿Dar de baja a este alumno? Deja de aparecer para seguir cobrándole, pero todo lo que ya pagó queda intacto en las estadísticas.')) return;
+    try {
+        const res = await fetchAdmin(`${API}/cursos/alumnos/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ activo: false })
+        });
+        if (!res.ok) throw new Error();
+        mostrarToast('Alumno dado de baja ✓', 'success');
+        cargarCursos();
+    } catch { mostrarToast('No se pudo dar de baja.', 'error'); }
+}
+
+async function reactivarAlumno(id) {
+    try {
+        const res = await fetchAdmin(`${API}/cursos/alumnos/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ activo: true })
+        });
+        if (!res.ok) throw new Error();
+        mostrarToast('Alumno reactivado ✓', 'success');
+        cargarCursos();
+    } catch { mostrarToast('No se pudo reactivar.', 'error'); }
+}
+
+async function eliminarAlumnoDefinitivo(id) {
+    if (!confirm('¿Eliminar este alumno definitivamente? Esta acción no se puede deshacer.')) return;
     try {
         const res = await fetchAdmin(`${API}/cursos/alumnos/${id}`, { method: 'DELETE' });
-        if (!res.ok) throw new Error();
+        if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'No se pudo eliminar'); }
         mostrarToast('Alumno eliminado ✓', 'success');
         cargarCursos();
-    } catch { mostrarToast('No se pudo eliminar.', 'error'); }
+    } catch (err) {
+        mostrarToast(err.message || 'No se pudo eliminar.', 'error');
+    }
+}
+
+// ── Exportar CSV ───────────────────────────────────────────────────
+function exportarCursosCSV() {
+    const { anio, alumnos } = CURSOS_CACHE;
+    if (!alumnos || !alumnos.length) { mostrarToast('No hay alumnos cargados para exportar.', 'error'); return; }
+
+    const filas = [['Nombre', 'Teléfono', 'Fecha inicio', 'Cuota mensual', 'Estado', 'Total histórico', ...MESES_CORTO]];
+
+    alumnos.forEach(a => {
+        const pagosPorMes = {};
+        (a.pagos || []).forEach(p => { pagosPorMes[p.mes] = p; });
+        const mesesRow = MESES_CORTO.map((_, idx) => {
+            const pago = pagosPorMes[idx + 1];
+            return pago && pago.pagado ? `Pagó $${pago.monto}` : 'Pendiente';
+        });
+        filas.push([
+            a.nombre,
+            a.telefono || '',
+            (a.fecha_inicio || '').split('T')[0],
+            a.monto_mensual,
+            a.activo === false ? 'Dado de baja' : 'Activo',
+            a.total_historico || 0,
+            ...mesesRow
+        ]);
+    });
+
+    const csv = filas.map(fila => fila.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `curso_alumnos_${anio}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 // ════════════════════════════════════════════════════════

@@ -212,11 +212,24 @@
         .mes-pago-btn { background: #1a1a1a; border: 1px solid var(--border); color: var(--text-muted); padding: 7px 11px; border-radius: 4px; font-size: .72rem; cursor: pointer; font-family: var(--font-body); transition: .2s; }
         .mes-pago-btn:hover { border-color: var(--accent); color: white; }
         .mes-pago-btn.pagado { background: rgba(46,204,113,.15); color: #2ecc71; border-color: rgba(46,204,113,.35); font-weight: bold; }
-        .alumno-card { background: #1a1a1a; border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 14px; }
-        .alumno-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+        .mes-pago-btn.vencido { background: rgba(255,68,68,.1); color: #ff4444; border-color: rgba(255,68,68,.35); }
+        .alumno-card { background: #1a1a1a; border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 14px; transition: .2s; }
+        .alumno-card.inactivo { opacity: .55; }
+        .alumno-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; gap: 10px; }
+        .alumno-card-nombre-wrap { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .alumno-card-nombre { font-family: var(--font-heading); font-size: 1.05rem; color: white; }
-        .alumno-card-sub { font-size: .8rem; color: var(--text-muted); margin-bottom: 12px; }
+        .alumno-card-sub { font-size: .8rem; color: var(--text-muted); margin-bottom: 6px; }
+        .alumno-card-notas { font-size: .75rem; color: var(--text-muted); font-style: italic; margin-bottom: 12px; padding: 6px 10px; background: #111; border-radius: 4px; border-left: 2px solid var(--border); }
         .alumno-meses-grid { display: flex; gap: 6px; flex-wrap: wrap; }
+        .alumno-card-acciones { display: flex; gap: 8px; flex-shrink: 0; }
+        .badge-mora { background: rgba(255,68,68,.15); color: #ff4444; border: 1px solid rgba(255,68,68,.3); padding: 2px 8px; border-radius: 3px; font-size: .62rem; text-transform: uppercase; font-weight: bold; }
+        .badge-inactivo { background: rgba(112,112,112,.2); color: var(--text-muted); border: 1px solid var(--border); padding: 2px 8px; border-radius: 3px; font-size: .62rem; text-transform: uppercase; }
+        .btn-icono-mini { background: none; border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; font-size: .78rem; padding: 5px 9px; border-radius: 4px; transition: .2s; }
+        .btn-icono-mini:hover { border-color: var(--accent); color: white; }
+        .toggle-inactivos { display: flex; align-items: center; gap: 6px; font-size: .78rem; color: var(--text-muted); cursor: pointer; }
+        .toggle-inactivos input { accent-color: var(--accent); cursor: pointer; }
+        .btn-exportar { background: #1a1a1a; border: 1px solid var(--border); color: var(--text-muted); padding: 10px 16px; border-radius: 4px; cursor: pointer; font-family: var(--font-body); font-size: .8rem; display: flex; align-items: center; gap: 6px; transition: .2s; }
+        .btn-exportar:hover { border-color: var(--accent); color: white; }
 
         /* ── MODAL ── */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 9999; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(4px); }
@@ -442,6 +455,13 @@
                     <button class="btn-turno-manual" onclick="abrirModalAlumno()">
                         <i class="fas fa-user-plus"></i> AGREGAR ALUMNO
                     </button>
+                    <button class="btn-exportar" onclick="exportarCursosCSV()">
+                        <i class="fas fa-file-csv"></i> EXPORTAR CSV
+                    </button>
+                    <label class="toggle-inactivos">
+                        <input type="checkbox" id="cursos-ver-inactivos" onchange="cargarCursos()" />
+                        <span>Ver dados de baja</span>
+                    </label>
                 </div>
                 <div id="cursos-stats-resumen" class="stats-dia-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px"></div>
                 <div id="cursos-lista"><p class="empty-msg">Cargando...</p></div>
