@@ -38,6 +38,7 @@
             const username = document.getElementById('user').value;
             const password = document.getElementById('pass').value;
             const errorMsg = document.getElementById('error');
+            errorMsg.style.display = 'none';
 
             try {
                 const res = await fetch(`${API}/auth/login`, {
@@ -47,12 +48,21 @@
                     credentials: 'include'
                 });
 
-                if (res.ok) {
-                    setTimeout(() => {
-                        window.location.href = 'admin.html';
-                    }, 100);
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    // Guardamos el respaldo JWT + los datos de sesión en
+                    // sessionStorage. Es lo que admin.js usa para funcionar
+                    // en Safari iOS, que bloquea la cookie de sesión
+                    // cross-site (frontend en Vercel, backend en Render).
+                    try {
+                        if (data.token) sessionStorage.setItem('admin_token', data.token);
+                        sessionStorage.setItem('admin_pro_id', data.profesionalId);
+                        sessionStorage.setItem('admin_logueado', '1');
+                    } catch (e) {}
+
+                    window.location.href = 'admin.html';
                 } else {
-                    const data = await res.json();
                     errorMsg.innerText = data.message || 'Usuario o clave incorrectos';
                     errorMsg.style.display = 'block';
                 }
