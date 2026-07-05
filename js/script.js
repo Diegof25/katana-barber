@@ -20,6 +20,15 @@ let servicioSeleccionado = null;
 let profesionalSeleccionado = null;
 let calendario = null;
 
+// Cache de servicios completos (id, nombre, precio, duracion_min) —
+// se necesita la duración para calcular el turno del acompañante.
+let SERVICIOS_CACHE = [];
+
+// Cache de los horarios disponibles del día/barbero actualmente
+// cargados — se usa para verificar que el horario del acompañante
+// esté realmente libre antes de intentar guardarlo.
+let HORARIOS_DISPONIBLES_CACHE = [];
+
 // ------------------------------------------------------------------
 // 1. Cargar Barberos (profesionales en el SaaS)
 // ------------------------------------------------------------------
@@ -62,6 +71,8 @@ async function cargarBarberos() {
             document.getElementById('fecha').value = '';
             document.getElementById('select-hora').innerHTML = '<option value="">Seleccioná un día primero</option>';
             document.getElementById('select-hora').disabled = true;
+            HORARIOS_DISPONIBLES_CACHE = [];
+            actualizarInfoAcompanante();
         });
 
     } catch (error) {
@@ -76,8 +87,9 @@ async function cargarServicios() {
     try {
         const res = await fetch(`${API}/servicios`);
         const servicios = await res.json();
-        const selectServicio = document.getElementById('select-servicio');
+        SERVICIOS_CACHE = servicios;
 
+        const selectServicio = document.getElementById('select-servicio');
         selectServicio.innerHTML = '<option value="" disabled selected>Elegí un servicio...</option>';
 
         servicios.forEach(s => {
@@ -95,6 +107,7 @@ async function cargarServicios() {
 
         selectServicio.addEventListener('change', (e) => {
             servicioSeleccionado = e.target.value;
+            actualizarInfoAcompanante();
         });
 
     } catch (error) {
@@ -138,10 +151,13 @@ async function cargarHorariosDisponibles(fechaElegida) {
         );
         const data = await res.json();
 
+        HORARIOS_DISPONIBLES_CACHE = data.horarios || [];
+
         selectHora.innerHTML = '<option value="">-- Seleccioná la hora --</option>';
 
         if (!data.horarios || data.horarios.length === 0) {
             selectHora.innerHTML = '<option value="">Sin turnos disponibles</option>';
+            actualizarInfoAcompanante();
             return;
         }
 
@@ -153,11 +169,71 @@ async function cargarHorariosDisponibles(fechaElegida) {
         });
 
         selectHora.disabled = false;
+        selectHora.addEventListener('change', actualizarInfoAcompanante);
+        actualizarInfoAcompanante();
 
     } catch (error) {
         selectHora.innerHTML = '<option value="">Error al cargar</option>';
     }
 }
+
+// ------------------------------------------------------------------
+// 4b. Acompañante (turno seguido) — mostrar/ocultar y calcular hora
+// ------------------------------------------------------------------
+function sumarMinutos(horaStr, minutos) {
+    const [h, m] = horaStr.split(':').map(Number);
+    const total  = h * 60 + m + minutos;
+    const hh     = Math.floor(total / 60) % 24;
+    const mm     = total % 60;
+    return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+}
+
+function obtenerHoraAcompanante() {
+    const hora = document.getElementById('select-hora').value;
+    const servicioId = document.getElementById('select-servicio').value;
+    if (!hora || !servicioId) return null;
+
+    const servicio = SERVICIOS_CACHE.find(s => String(s.id) === String(servicioId));
+    const duracion = servicio ? (parseInt(servicio.duracion_min) || 30) : 30;
+
+    return sumarMinutos(hora, duracion);
+}
+
+function actualizarInfoAcompanante() {
+    const checkAcompanante = document.getElementById('check-acompanante');
+    const infoEl = document.getElementById('acompanante-hora-info');
+    if (!checkAcompanante || !checkAcompanante.checked || !infoEl) return;
+
+    const horaAcomp = obtenerHoraAcompanante();
+
+    if (!horaAcomp) {
+        infoEl.className = 'neutro';
+        infoEl.textContent = 'Elegí barbero, servicio y horario para calcular el turno del acompañante.';
+        return;
+    }
+
+    const disponible = HORARIOS_DISPONIBLES_CACHE.includes(horaAcomp);
+
+    if (disponible) {
+        infoEl.className = 'ok';
+        infoEl.textContent = `✅ El acompañante quedaría a las ${horaAcomp} hs (turno seguido, mismo barbero).`;
+    } else {
+        infoEl.className = 'bad';
+        infoEl.textContent = `⚠️ A las ${horaAcomp} hs ese horario no está disponible. Probá con otro horario de inicio, o desmarcá el acompañante y coordinalo por WhatsApp.`;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const checkAcompanante   = document.getElementById('check-acompanante');
+    const camposAcompanante  = document.getElementById('acompanante-fields');
+
+    if (checkAcompanante && camposAcompanante) {
+        checkAcompanante.addEventListener('change', () => {
+            camposAcompanante.classList.toggle('visible', checkAcompanante.checked);
+            actualizarInfoAcompanante();
+        });
+    }
+});
 
 // ------------------------------------------------------------------
 // 5. Confirmar Reserva
@@ -178,10 +254,25 @@ document.getElementById('btn-confirmar').onclick = async () => {
 
     const selectServicio  = document.getElementById('select-servicio');
     const selectBarbero   = document.getElementById('select-barbero');
+    const checkAcompanante = document.getElementById('check-acompanante');
+    const conAcompanante   = checkAcompanante && checkAcompanante.checked;
 
     if (!selectBarbero || !selectBarbero.value) return alert('Por favor, seleccioná un barbero.');
     if (!selectServicio.value)                  return alert('Por favor, seleccioná un servicio.');
     if (!nombre || !telefono || !fecha || !hora) return alert('Completá todos los campos.');
+
+    let nombreAcompanante = '';
+    let horaAcompanante   = null;
+
+    if (conAcompanante) {
+        nombreAcompanante = document.getElementById('acompanante-nombre').value.trim();
+        if (!nombreAcompanante) return alert('Ingresá el nombre del acompañante, o desmarcá la opción.');
+
+        horaAcompanante = obtenerHoraAcompanante();
+        if (!horaAcompanante || !HORARIOS_DISPONIBLES_CACHE.includes(horaAcompanante)) {
+            return alert('El horario del acompañante no está disponible. Elegí otro horario de inicio para el turno principal, o coordiná el segundo turno por WhatsApp.');
+        }
+    }
 
     const servicioId     = selectServicio.value;
     const nombreServicio = selectServicio.options[selectServicio.selectedIndex].text;
@@ -192,15 +283,6 @@ document.getElementById('btn-confirmar').onclick = async () => {
     // Formato requerido por el SaaS: "YYYY-MM-DDTHH:MM:00-03:00"
     const fechaHoraSaaS = `${fecha}T${hora}:00-03:00`;
 
-    const body = {
-        profesional_id: profesionalId,
-        servicio_id:    parseInt(servicioId),
-        cliente_nombre: nombre,
-        cliente_tel:    telefono.replace(/\D/g, ''),
-        fecha_hora:     fechaHoraSaaS,
-        notas:          ''
-    };
-
     // A partir de acá ya se está enviando: bloqueamos el botón y avisamos
     // visualmente, así nadie hace click 3 veces pensando que "no anduvo".
     const btnConfirmar   = document.getElementById('btn-confirmar');
@@ -210,14 +292,41 @@ document.getElementById('btn-confirmar').onclick = async () => {
     btnConfirmar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> GUARDANDO...';
 
     try {
-        const res = await fetch(`${API}/turnos`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
+        let res, result;
+
+        if (conAcompanante) {
+            // Reserva doble: 2 turnos seguidos, atómico en el backend
+            // (si el segundo horario ya se ocupó, no se guarda ninguno).
+            res = await fetch(`${API}/turnos/doble`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    profesional_id: profesionalId,
+                    servicio_id:    parseInt(servicioId),
+                    cliente_nombre: nombre,
+                    cliente_tel:    telefono.replace(/\D/g, ''),
+                    fecha_hora:     fechaHoraSaaS,
+                    notas:          '',
+                    acompanante_nombre: nombreAcompanante
+                })
+            });
+        } else {
+            res = await fetch(`${API}/turnos`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    profesional_id: profesionalId,
+                    servicio_id:    parseInt(servicioId),
+                    cliente_nombre: nombre,
+                    cliente_tel:    telefono.replace(/\D/g, ''),
+                    fecha_hora:     fechaHoraSaaS,
+                    notas:          ''
+                })
+            });
+        }
 
         const okStatus = res.ok;
-        const result   = await res.json();
+        result = await res.json();
         console.log('Respuesta del servidor:', result);
 
         if (okStatus) {
@@ -225,17 +334,32 @@ document.getElementById('btn-confirmar').onclick = async () => {
             const fechaLinda = new Date(fecha + 'T12:00:00').toLocaleDateString('es-AR', options);
             const diaCapitalizado = fechaLinda.charAt(0).toUpperCase() + fechaLinda.slice(1);
 
-            const mensajeWsp = encodeURIComponent(
-                `*¡TURNO RESERVADO CON ${nombreBarbero.toUpperCase()}!* ✂️\n\n` +
-                `Hola, soy *${nombre}*.\n` +
-                `Confirmé mi turno desde la web:\n\n` +
-                `💈 *Servicio:* ${nombreServicio}\n` +
-                `📅 *Fecha:* ${diaCapitalizado}\n` +
-                `⏰ *Hora:* ${hora} hs\n\n` +
-                `¡Nos vemos pronto!`
-            );
+            let mensajeWsp;
+            if (conAcompanante) {
+                mensajeWsp = encodeURIComponent(
+                    `*¡TURNOS RESERVADOS CON ${nombreBarbero.toUpperCase()}!* ✂️\n\n` +
+                    `Hola, soy *${nombre}*.\n` +
+                    `Confirmé 2 turnos seguidos desde la web:\n\n` +
+                    `💈 *Servicio:* ${nombreServicio}\n` +
+                    `📅 *Fecha:* ${diaCapitalizado}\n` +
+                    `⏰ *Turno 1 (${nombre}):* ${hora} hs\n` +
+                    `⏰ *Turno 2 (${nombreAcompanante}):* ${horaAcompanante} hs\n\n` +
+                    `¡Nos vemos pronto!`
+                );
+                alert(`✅ ¡Turnos guardados con ${nombreBarbero}! ${nombre} a las ${hora} hs y ${nombreAcompanante} a las ${horaAcompanante} hs. Ahora te redirigimos a su WhatsApp.`);
+            } else {
+                mensajeWsp = encodeURIComponent(
+                    `*¡TURNO RESERVADO CON ${nombreBarbero.toUpperCase()}!* ✂️\n\n` +
+                    `Hola, soy *${nombre}*.\n` +
+                    `Confirmé mi turno desde la web:\n\n` +
+                    `💈 *Servicio:* ${nombreServicio}\n` +
+                    `📅 *Fecha:* ${diaCapitalizado}\n` +
+                    `⏰ *Hora:* ${hora} hs\n\n` +
+                    `¡Nos vemos pronto!`
+                );
+                alert(`✅ ¡Turno guardado con ${nombreBarbero}! Ahora te redirigimos a su WhatsApp.`);
+            }
 
-            alert(`✅ ¡Turno guardado con ${nombreBarbero}! Ahora te redirigimos a su WhatsApp.`);
             window.location.href = `https://wa.me/${nroBarbero}?text=${mensajeWsp}`;
             setTimeout(() => { window.location.reload(); }, 1500);
             // No reactivamos el botón acá a propósito: la página se va a

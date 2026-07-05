@@ -12,6 +12,19 @@
     
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+
+    <style>
+        /* ── Acompañante (turno seguido) ── */
+        .checkbox-box { margin-bottom: 18px; }
+        .checkbox-label { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: .88rem; line-height: 1.4; }
+        .checkbox-label input[type="checkbox"] { margin-top: 3px; width: 17px; height: 17px; flex-shrink: 0; accent-color: #d4af37; cursor: pointer; }
+        #acompanante-fields { display: none; margin-bottom: 18px; padding: 14px; background: rgba(212,175,55,.06); border: 1px solid rgba(212,175,55,.25); border-radius: 8px; }
+        #acompanante-fields.visible { display: block; }
+        #acompanante-hora-info { font-size: .8rem; margin-top: 10px; padding: 8px 10px; border-radius: 6px; }
+        #acompanante-hora-info.ok { background: rgba(46,204,113,.12); color: #2ecc71; }
+        #acompanante-hora-info.bad { background: rgba(255,68,68,.12); color: #ff4444; }
+        #acompanante-hora-info.neutro { background: rgba(255,255,255,.05); color: #999; }
+    </style>
 </head>
 <body>
 
@@ -345,6 +358,21 @@
                                     <option value="">Sin horarios disponibles</option>
                                 </select>
                             </div>
+                        </div>
+
+                        <div class="checkbox-box">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="check-acompanante">
+                                <span>👨‍👦 ¿Va con un acompañante (hijo/a)? Le reservamos el turno seguido, sin que tengas que cargarlo dos veces.</span>
+                            </label>
+                        </div>
+
+                        <div id="acompanante-fields">
+                            <div class="input-box">
+                                <label><i class="fas fa-user-plus"></i> Nombre del acompañante</label>
+                                <input type="text" id="acompanante-nombre" placeholder="Nombre del hijo/a">
+                            </div>
+                            <p id="acompanante-hora-info" class="neutro">Elegí barbero, servicio y horario para calcular el turno del acompañante.</p>
                         </div>
 
                         <button id="btn-confirmar" class="btn-primary btn-block">
