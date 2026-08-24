@@ -2,12 +2,18 @@
 //  KATANA BARBERSHOP — admin.js (SaaS Turnero)
 //  Versión completa: tabs, stats, ocupación, horarios, bloqueos,
 //  calendario mensual, rango de fechas, JWT para Safari iOS,
-//  cursos de barbería (solo visible para Luciano)
+//  cursos de barbería (solo visible para Luciano),
+//  aviso de estado de cuenta (turnero-superadmin)
 // =============================================================
 
 const API_BASE = 'https://turnos-backend-p9ka.onrender.com/api';
 const SLUG     = 'katana-barbershop';
 const API      = `${API_BASE}/${SLUG}`;
+
+// ID de este negocio en el sistema de control de cuentas (turnero-superadmin).
+// Fijo porque este admin.js es específico de Katana.
+const NEGOCIO_ID_SUPERADMIN = 3;
+const DEUDA_API = 'https://turnero-superadmin.onrender.com/deuda';
 
 let PROFESIONAL_ID = null;
 
@@ -42,6 +48,61 @@ function mostrarToast(msg, tipo = 'success') {
     toast.className   = `admin-toast toast-${tipo} visible`;
     clearTimeout(toast._timeout);
     toast._timeout = setTimeout(() => toast.classList.remove('visible'), 3500);
+}
+
+// ════════════════════════════════════════════════════════
+// AVISO DE ESTADO DE CUENTA (turnero-superadmin)
+// ════════════════════════════════════════════════════════
+async function chequearEstadoCuenta() {
+    try {
+        const url = `${DEUDA_API}?negocio_id=${NEGOCIO_ID_SUPERADMIN}&profesional_id=${PROFESIONAL_ID}`;
+        const res = await fetch(url);
+        if (!res.ok) return; // si falla la consulta, no mostramos nada (fail-safe)
+        const data = await res.json();
+        if (data.mostrar_aviso) mostrarBannerDeuda();
+    } catch (e) {
+        // Si el servicio está caído o hay un error de red, no bloqueamos
+        // el uso normal del panel — simplemente no se muestra el aviso.
+    }
+}
+
+function mostrarBannerDeuda() {
+    if (document.getElementById('banner-deuda-turnero')) return; // evita duplicados
+
+    const banner = document.createElement('div');
+    banner.id = 'banner-deuda-turnero';
+    banner.style.cssText = `
+        background: #4a1e1e;
+        color: #ffb3b3;
+        padding: 12px 20px;
+        text-align: center;
+        font-size: .85rem;
+        font-family: var(--font-body);
+        position: relative;
+        z-index: 9999;
+    `;
+    banner.innerHTML = `
+        <span>⚠️ Tu cuenta de Turnero está vencida. Regularizá el pago para seguir usando el sistema sin interrupciones.</span>
+        <button id="cerrar-banner-deuda" style="
+            background: none;
+            border: none;
+            color: #ffb3b3;
+            font-size: 1rem;
+            cursor: pointer;
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+        ">✕</button>
+    `;
+
+    document.body.prepend(banner);
+
+    document.getElementById('cerrar-banner-deuda').addEventListener('click', () => {
+        banner.remove();
+        // Solo se oculta por esta carga de página. Si sigue debiendo,
+        // vuelve a aparecer la próxima vez que entre.
+    });
 }
 
 // ════════════════════════════════════════════════════════
@@ -92,6 +153,7 @@ function mostrarPanelAdmin() {
     cargarBloqueos();
     cargarHorariosAdmin();
     cargarCalendarioGeneralData();
+    chequearEstadoCuenta();
 
     // Mostrar pestaña "Cursos" solo para los profesionales habilitados (Luciano)
     if (CURSOS_HABILITADO_PARA.includes(PROFESIONAL_ID)) {
