@@ -57,54 +57,57 @@ async function chequearEstadoCuenta() {
     try {
         const url = `${DEUDA_API}?negocio_id=${NEGOCIO_ID_SUPERADMIN}&profesional_id=${PROFESIONAL_ID}`;
         const res = await fetch(url);
-        if (!res.ok) return; // si falla la consulta, no mostramos nada (fail-safe)
+        if (!res.ok) return;
         const data = await res.json();
-        if (data.mostrar_aviso) mostrarBannerDeuda();
+        if (data.mostrar_aviso) mostrarAlertaDeuda(data);
     } catch (e) {
         // Si el servicio está caído o hay un error de red, no bloqueamos
         // el uso normal del panel — simplemente no se muestra el aviso.
     }
 }
 
-function mostrarBannerDeuda() {
-    if (document.getElementById('banner-deuda-turnero')) return; // evita duplicados
+function mostrarAlertaDeuda(data) {
+    if (document.getElementById('modal-alerta-deuda')) return; // evita duplicados
 
-    const banner = document.createElement('div');
-    banner.id = 'banner-deuda-turnero';
-    banner.style.cssText = `
-        background: #4a1e1e;
-        color: #ffb3b3;
-        padding: 12px 20px;
-        text-align: center;
-        font-size: .85rem;
-        font-family: var(--font-body);
-        position: relative;
-        z-index: 9999;
-    `;
-    banner.innerHTML = `
-        <span>⚠️ Tu cuenta de Turnero está vencida. Regularizá el pago para seguir usando el sistema sin interrupciones.</span>
-        <button id="cerrar-banner-deuda" style="
-            background: none;
-            border: none;
-            color: #ffb3b3;
-            font-size: 1rem;
-            cursor: pointer;
-            position: absolute;
-            right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-        ">✕</button>
-    `;
+    let vencimientoTexto = '';
+    if (data.fecha_vencimiento) {
+        const f = new Date(data.fecha_vencimiento);
+        const dia = String(f.getUTCDate()).padStart(2, '0');
+        const mes = String(f.getUTCMonth() + 1).padStart(2, '0');
+        vencimientoTexto = `${dia}/${mes}/${f.getUTCFullYear()}`;
+    }
 
-    document.body.prepend(banner);
+    const modal = document.createElement('div');
+    modal.id = 'modal-alerta-deuda';
+    modal.className = 'modal-overlay visible';
+    modal.innerHTML = `
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fas fa-triangle-exclamation" style="color:#ff4444"></i> Cuenta vencida</h3>
+                <button class="modal-close" onclick="cerrarAlertaDeuda()">✕</button>
+            </div>
+            <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:16px">
+                Tu cuenta de Turnero está vencida${vencimientoTexto ? ' desde el ' + vencimientoTexto : ''}.
+                Regularizá el pago para seguir usando el sistema sin interrupciones.
+            </p>
+            ${data.monto_mensual ? `
+            <div class="modal-row">
+                <label class="modal-label">Monto a regularizar</label>
+                <div class="modal-precio-base">$${Number(data.monto_mensual).toLocaleString('es-AR')}</div>
+            </div>` : ''}
+            <button class="btn-modal-confirmar" onclick="cerrarAlertaDeuda()">
+                <i class="fas fa-check"></i> ENTENDIDO
+            </button>
+        </div>`;
 
-    document.getElementById('cerrar-banner-deuda').addEventListener('click', () => {
-        banner.remove();
-        // Solo se oculta por esta carga de página. Si sigue debiendo,
-        // vuelve a aparecer la próxima vez que entre.
-    });
+    document.body.appendChild(modal);
 }
 
+function cerrarAlertaDeuda() {
+    document.getElementById('modal-alerta-deuda')?.remove();
+    // Solo se cierra por esta carga de página. Si sigue debiendo,
+    // vuelve a aparecer la próxima vez que entre.
+}
 // ════════════════════════════════════════════════════════
 // SESIÓN
 // ════════════════════════════════════════════════════════
